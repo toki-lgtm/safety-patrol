@@ -9,7 +9,10 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
   const [isLoading, setIsLoading] = useState(true)
   const [editingId, setEditingId] = useState(null)
 
-  const getApiUrl = () => 'https://portal-api-hhlx.onrender.com'
+  const getApiUrl = () => {
+    const isDev = process.env.NODE_ENV !== 'production'
+    return isDev ? 'http://localhost:3000' : 'https://portal-api-hhlx.onrender.com'
+  }
 
   useEffect(() => {
     fetchInspections()

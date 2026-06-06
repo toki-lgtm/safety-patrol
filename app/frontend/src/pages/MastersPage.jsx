@@ -10,7 +10,9 @@ function MastersPage() {
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({})
 
-  const API_URL = 'https://portal-api-hhlx.onrender.com'
+  const API_URL = process.env.NODE_ENV !== 'production'
+    ? 'http://localhost:3000'
+    : 'https://portal-api-hhlx.onrender.com'
 
   // データ取得
   useEffect(() => {
@@ -82,31 +84,42 @@ function MastersPage() {
   const renderProjects = () => (
     <div className="space-y-4">
       {editingId && (
-        <div className="bg-blue-50 p-4 rounded-lg space-y-3">
-          <input
-            placeholder="現場ID"
-            value={formData.id || ''}
-            onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-            className="w-full px-3 py-2 border rounded"
-            disabled={editingId}
-          />
-          <input
-            placeholder="現場名"
-            value={formData.name || ''}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2 border rounded"
-          />
-          <input
-            placeholder="場所"
-            value={formData.location || ''}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            className="w-full px-3 py-2 border rounded"
-          />
+        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4 mb-6">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">現場ID</label>
+              <input
+                placeholder="P001"
+                value={formData.id || ''}
+                onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                disabled={editingId !== 'new'}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">現場名</label>
+              <input
+                placeholder="○○現場"
+                value={formData.name || ''}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">所在地</label>
+              <input
+                placeholder="東京都渋谷区"
+                value={formData.location || ''}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
           <div className="flex gap-2">
-            <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded">
+            <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
               保存
             </button>
-            <button onClick={handleCancel} className="px-4 py-2 bg-gray-400 text-white rounded">
+            <button onClick={handleCancel} className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 font-medium">
               キャンセル
             </button>
           </div>
@@ -118,44 +131,46 @@ function MastersPage() {
           setEditingId('new')
           setFormData({})
         }}
-        className="px-4 py-2 bg-blue-600 text-white rounded"
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium mb-4"
       >
-        ➕ 追加
+        ➕ 新規追加
       </button>
 
-      <table className="w-full border-collapse border">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border p-2">現場ID</th>
-            <th className="border p-2">現場名</th>
-            <th className="border p-2">場所</th>
-            <th className="border p-2">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {projects.map((project) => (
-            <tr key={project.id}>
-              <td className="border p-2">{project.id}</td>
-              <td className="border p-2">{project.name}</td>
-              <td className="border p-2">{project.location}</td>
-              <td className="border p-2 space-x-2">
-                <button
-                  onClick={() => handleEdit(project)}
-                  className="text-blue-600 hover:underline"
-                >
-                  編集
-                </button>
-                <button
-                  onClick={() => handleDelete(project.id)}
-                  className="text-red-600 hover:underline"
-                >
-                  削除
-                </button>
-              </td>
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table className="w-full">
+          <thead className="bg-gray-100 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">現場ID</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">現場名</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">所在地</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">操作</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {projects.map((project) => (
+              <tr key={project.id} className="hover:bg-gray-50 transition">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{project.id}</td>
+                <td className="px-6 py-4 text-sm text-gray-600">{project.name}</td>
+                <td className="px-6 py-4 text-sm text-gray-600">{project.location}</td>
+                <td className="px-6 py-4 text-sm space-x-2">
+                  <button
+                    onClick={() => handleEdit(project)}
+                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                  >
+                    編集
+                  </button>
+                  <button
+                    onClick={() => handleDelete(project.id)}
+                    className="text-red-600 hover:text-red-800 hover:underline font-medium"
+                  >
+                    削除
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 
@@ -163,37 +178,42 @@ function MastersPage() {
   const renderStaff = () => (
     <div className="space-y-4">
       {editingId && (
-        <div className="bg-blue-50 p-4 rounded-lg space-y-3">
-          <input
-            placeholder="スタッフID"
-            value={formData.id || ''}
-            onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-            className="w-full px-3 py-2 border rounded"
-            disabled={editingId !== 'new'}
-          />
-          <input
-            placeholder="名前"
-            value={formData.name || ''}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2 border rounded"
-          />
-          <input
-            placeholder="メール"
-            value={formData.email || ''}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full px-3 py-2 border rounded"
-          />
-          <input
-            placeholder="役職"
-            value={formData.role || ''}
-            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-            className="w-full px-3 py-2 border rounded"
-          />
+        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4 mb-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">社員ID</label>
+              <input
+                placeholder="S001"
+                value={formData.id || ''}
+                onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                disabled={editingId !== 'new'}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">氏名</label>
+              <input
+                placeholder="中原 釈統"
+                value={formData.name || ''}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+              <input
+                placeholder="tokimune@nakahara131.co.jp"
+                value={formData.email || ''}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
           <div className="flex gap-2">
-            <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded">
+            <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
               保存
             </button>
-            <button onClick={handleCancel} className="px-4 py-2 bg-gray-400 text-white rounded">
+            <button onClick={handleCancel} className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 font-medium">
               キャンセル
             </button>
           </div>
@@ -205,46 +225,47 @@ function MastersPage() {
           setEditingId('new')
           setFormData({})
         }}
-        className="px-4 py-2 bg-blue-600 text-white rounded"
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium mb-4"
       >
-        ➕ 追加
+        ➕ 新規追加
       </button>
 
-      <table className="w-full border-collapse border">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border p-2">スタッフID</th>
-            <th className="border p-2">名前</th>
-            <th className="border p-2">メール</th>
-            <th className="border p-2">役職</th>
-            <th className="border p-2">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {staff.map((s) => (
-            <tr key={s.id}>
-              <td className="border p-2">{s.id}</td>
-              <td className="border p-2">{s.name}</td>
-              <td className="border p-2">{s.email}</td>
-              <td className="border p-2">{s.role}</td>
-              <td className="border p-2 space-x-2">
-                <button
-                  onClick={() => handleEdit(s)}
-                  className="text-blue-600 hover:underline"
-                >
-                  編集
-                </button>
-                <button
-                  onClick={() => handleDelete(s.id)}
-                  className="text-red-600 hover:underline"
-                >
-                  削除
-                </button>
-              </td>
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table className="w-full">
+          <thead className="bg-gray-100 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">社員ID</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">氏名</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">メールアドレス</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">操作</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {staff.map((s) => (
+              <tr key={s.id} className="hover:bg-gray-50 transition">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{s.id}</td>
+                <td className="px-6 py-4 text-sm text-gray-600">{s.name}</td>
+                <td className="px-6 py-4 text-sm text-gray-600">{s.email}</td>
+                <td className="px-6 py-4 text-sm text-gray-600">{s.role}</td>
+                <td className="px-6 py-4 text-sm space-x-2">
+                  <button
+                    onClick={() => handleEdit(s)}
+                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                  >
+                    編集
+                  </button>
+                  <button
+                    onClick={() => handleDelete(s.id)}
+                    className="text-red-600 hover:text-red-800 hover:underline font-medium"
+                  >
+                    削除
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 
@@ -252,31 +273,42 @@ function MastersPage() {
   const renderInspectionItems = () => (
     <div className="space-y-4">
       {editingId && (
-        <div className="bg-blue-50 p-4 rounded-lg space-y-3">
-          <input
-            placeholder="項目ID"
-            value={formData.id || ''}
-            onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-            className="w-full px-3 py-2 border rounded"
-            disabled={editingId !== 'new'}
-          />
-          <input
-            placeholder="カテゴリ"
-            value={formData.category || ''}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            className="w-full px-3 py-2 border rounded"
-          />
-          <input
-            placeholder="説明"
-            value={formData.description || ''}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="w-full px-3 py-2 border rounded"
-          />
+        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4 mb-6">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">項目マスターID</label>
+              <input
+                placeholder="M001"
+                value={formData.id || ''}
+                onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                disabled={editingId !== 'new'}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">区分</label>
+              <input
+                placeholder="一般事項"
+                value={formData.category || ''}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">点検項目内容</label>
+              <input
+                placeholder="安全標識の確認"
+                value={formData.description || ''}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
           <div className="flex gap-2">
-            <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded">
+            <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
               保存
             </button>
-            <button onClick={handleCancel} className="px-4 py-2 bg-gray-400 text-white rounded">
+            <button onClick={handleCancel} className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 font-medium">
               キャンセル
             </button>
           </div>
@@ -288,81 +320,93 @@ function MastersPage() {
           setEditingId('new')
           setFormData({})
         }}
-        className="px-4 py-2 bg-blue-600 text-white rounded"
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium mb-4"
       >
-        ➕ 追加
+        ➕ 新規追加
       </button>
 
-      <table className="w-full border-collapse border">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border p-2">項目ID</th>
-            <th className="border p-2">カテゴリ</th>
-            <th className="border p-2">説明</th>
-            <th className="border p-2">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {inspectionItems.map((item) => (
-            <tr key={item.id}>
-              <td className="border p-2">{item.id}</td>
-              <td className="border p-2">{item.category}</td>
-              <td className="border p-2">{item.description}</td>
-              <td className="border p-2 space-x-2">
-                <button
-                  onClick={() => handleEdit(item)}
-                  className="text-blue-600 hover:underline"
-                >
-                  編集
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="text-red-600 hover:underline"
-                >
-                  削除
-                </button>
-              </td>
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table className="w-full">
+          <thead className="bg-gray-100 border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">項目マスターID</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">区分</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">点検項目内容</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">操作</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {inspectionItems.map((item) => (
+              <tr key={item.id} className="hover:bg-gray-50 transition">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.id}</td>
+                <td className="px-6 py-4 text-sm text-gray-600">{item.category}</td>
+                <td className="px-6 py-4 text-sm text-gray-600">{item.description}</td>
+                <td className="px-6 py-4 text-sm space-x-2">
+                  <button
+                    onClick={() => handleEdit(item)}
+                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                  >
+                    編集
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="text-red-600 hover:text-red-800 hover:underline font-medium"
+                  >
+                    削除
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold">⚙️ マスター管理</h1>
+      <header className="bg-white border-b border-gray-200 shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center gap-3">
+            <div className="text-3xl">⚙️</div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">マスター管理</h1>
+              <p className="text-sm text-gray-500">現場、スタッフ、対象区分の設定</p>
+            </div>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* タブ */}
-        <div className="flex gap-4 mb-6 border-b">
-          {[
-            { id: 'projects', label: '📍 現場' },
-            { id: 'staff', label: '👤 スタッフ' },
-            { id: 'inspection-items', label: '📋 対象区分' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`pb-2 px-4 font-medium transition ${
-                activeTab === tab.id
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="bg-white rounded-t-lg border-b border-gray-200 shadow-sm">
+          <div className="flex gap-8 px-6">
+            {[
+              { id: 'projects', label: '📍 現場' },
+              { id: 'staff', label: '👤 社員' },
+              { id: 'inspection-items', label: '📋 対象区分' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-4 px-2 font-medium text-sm border-b-2 transition ${
+                  activeTab === tab.id
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* コンテンツ */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-b-lg shadow-sm p-6">
           {loading ? (
-            <p className="text-gray-500">読み込み中...</p>
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">読み込み中...</p>
+            </div>
           ) : (
             <>
               {activeTab === 'projects' && renderProjects()}
