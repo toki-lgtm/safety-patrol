@@ -9,14 +9,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
   const [isLoading, setIsLoading] = useState(true)
   const [editingId, setEditingId] = useState(null)
 
-  const getApiUrl = () => {
-    return (
-      import.meta.env.VITE_API_URL ||
-      (typeof window !== 'undefined' && window.location.hostname === 'safety-patrol-nine.vercel.app'
-        ? 'https://portal-api-hhlx.onrender.com'
-        : 'http://localhost:3000')
-    )
-  }
+  const getApiUrl = () => 'https://portal-api-hhlx.onrender.com'
 
   useEffect(() => {
     fetchInspections()
