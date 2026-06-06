@@ -10,7 +10,11 @@ function MastersPage() {
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({})
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+  const API_URL =
+    import.meta.env.VITE_API_URL ||
+    (typeof window !== 'undefined' && window.location.hostname === 'safety-patrol-nine.vercel.app'
+      ? 'https://portal-api-hhlx.onrender.com'
+      : 'http://localhost:3000')
 
   // データ取得
   useEffect(() => {

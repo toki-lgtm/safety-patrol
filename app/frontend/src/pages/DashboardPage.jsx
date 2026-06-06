@@ -9,6 +9,15 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
   const [isLoading, setIsLoading] = useState(true)
   const [editingId, setEditingId] = useState(null)
 
+  const getApiUrl = () => {
+    return (
+      import.meta.env.VITE_API_URL ||
+      (typeof window !== 'undefined' && window.location.hostname === 'safety-patrol-nine.vercel.app'
+        ? 'https://portal-api-hhlx.onrender.com'
+        : 'http://localhost:3000')
+    )
+  }
+
   useEffect(() => {
     fetchInspections()
   }, [])
@@ -17,7 +26,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
     try {
       setIsLoading(true)
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/inspections`,
+        `${getApiUrl()}/api/inspections`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('authToken')}`
@@ -35,7 +44,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
   const handleAddInspection = async (data) => {
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/inspections`,
+        `${getApiUrl()}/api/inspections`,
         data,
         {
           headers: {
@@ -55,7 +64,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
   const handleUpdateInspection = async (id, data) => {
     try {
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/inspections/${id}`,
+        `${getApiUrl()}/api/inspections/${id}`,
         data,
         {
           headers: {
@@ -79,7 +88,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
 
     try {
       await axios.delete(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/inspections/${id}`,
+        `${getApiUrl()}/api/inspections/${id}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('authToken')}`
