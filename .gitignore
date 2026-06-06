@@ -14,3 +14,4 @@ build/
 .parcel-cache
 .cache
 .env.example.bak
+.env.production
