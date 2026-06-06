@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import DashboardPage from './pages/DashboardPage'
+import MastersPage from './pages/MastersPage'
 
 function App() {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState('dashboard')
 
   useEffect(() => {
     // URL パラメータからユーザー情報を取得
@@ -74,7 +76,35 @@ function App() {
     )
   }
 
-  return <DashboardPage user={user} onLogout={handleLogout} />
+  if (currentPage === 'masters') {
+    return (
+      <div>
+        <div className="fixed top-0 right-0 p-4 space-x-2">
+          <button
+            onClick={() => setCurrentPage('dashboard')}
+            className="px-4 py-2 bg-gray-600 text-white rounded"
+          >
+            ← 戻る
+          </button>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-600 text-white rounded"
+          >
+            ログアウト
+          </button>
+        </div>
+        <MastersPage />
+      </div>
+    )
+  }
+
+  return (
+    <DashboardPage
+      user={user}
+      onLogout={handleLogout}
+      onOpenMasters={() => setCurrentPage('masters')}
+    />
+  )
 }
 
 export default App

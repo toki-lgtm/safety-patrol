@@ -3,7 +3,7 @@ import axios from 'axios'
 import InspectionForm from '../components/InspectionForm'
 import InspectionList from '../components/InspectionList'
 
-function DashboardPage({ user, onLogout }) {
+function DashboardPage({ user, onLogout, onOpenMasters }) {
   const [activeTab, setActiveTab] = useState('list')
   const [inspections, setInspections] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -127,7 +127,7 @@ function DashboardPage({ user, onLogout }) {
 
       {/* タブ */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex gap-8">
             <button
               onClick={() => {
@@ -156,6 +156,14 @@ function DashboardPage({ user, onLogout }) {
               ➕ 新規点検
             </button>
           </div>
+          {onOpenMasters && (
+            <button
+              onClick={onOpenMasters}
+              className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+            >
+              ⚙️ マスター管理
+            </button>
+          )}
         </div>
       </div>
 
