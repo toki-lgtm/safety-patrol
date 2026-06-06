@@ -7,13 +7,27 @@ function App() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // ポータルから渡されたユーザー情報を取得
-    const stored = localStorage.getItem('user')
-    if (stored) {
+    // URL パラメータからユーザー情報を取得
+    const params = new URLSearchParams(window.location.search)
+    const userParam = params.get('user')
+
+    if (userParam) {
       try {
-        setUser(JSON.parse(stored))
+        const userData = JSON.parse(decodeURIComponent(userParam))
+        setUser(userData)
+        localStorage.setItem('user', JSON.stringify(userData))
       } catch (e) {
-        console.error('Failed to parse user:', e)
+        console.error('Failed to parse user from URL:', e)
+      }
+    } else {
+      // localStorage からも取得を試みる
+      const stored = localStorage.getItem('user')
+      if (stored) {
+        try {
+          setUser(JSON.parse(stored))
+        } catch (e) {
+          console.error('Failed to parse user from localStorage:', e)
+        }
       }
     }
     setIsLoading(false)
