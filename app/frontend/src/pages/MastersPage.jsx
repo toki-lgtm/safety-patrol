@@ -14,6 +14,10 @@ function MastersPage() {
     ? 'http://localhost:3000'
     : 'https://portal-api-hhlx.onrender.com'
 
+  const authHeaders = () => ({
+    Authorization: `Bearer ${localStorage.getItem('authToken')}`
+  })
+
   // データ取得
   useEffect(() => {
     fetchData()
@@ -23,13 +27,13 @@ function MastersPage() {
     try {
       setLoading(true)
       if (activeTab === 'projects') {
-        const res = await axios.get(`${API_URL}/api/masters/projects`)
+        const res = await axios.get(`${API_URL}/api/masters/projects`, { headers: authHeaders() })
         setProjects(res.data)
       } else if (activeTab === 'staff') {
-        const res = await axios.get(`${API_URL}/api/masters/staff`)
+        const res = await axios.get(`${API_URL}/api/masters/staff`, { headers: authHeaders() })
         setStaff(res.data)
       } else if (activeTab === 'inspection-items') {
-        const res = await axios.get(`${API_URL}/api/masters/inspection-items`)
+        const res = await axios.get(`${API_URL}/api/masters/inspection-items`, { headers: authHeaders() })
         setInspectionItems(res.data)
       }
     } catch (error) {
@@ -43,11 +47,17 @@ function MastersPage() {
   const handleSave = async () => {
     try {
       const endpoint = `/api/masters/${activeTab}`
-      const method = editingId ? 'put' : 'post'
-      const url = editingId ? `${endpoint}/${editingId}` : endpoint
+      const isNew = editingId === 'new'
+      const method = isNew ? 'post' : 'put'
+      const url = isNew ? endpoint : `${endpoint}/${editingId}`
 
-      await axios[method](`${API_URL}${url}`, formData)
-      alert(editingId ? '更新しました' : '追加しました')
+      // 新規作成時は id を送らない（サーバー自動採番）
+      const payload = isNew
+        ? Object.fromEntries(Object.entries(formData).filter(([k]) => k !== 'id'))
+        : formData
+
+      await axios[method](`${API_URL}${url}`, payload, { headers: authHeaders() })
+      alert(isNew ? '追加しました' : '更新しました')
       setFormData({})
       setEditingId(null)
       fetchData()
@@ -61,7 +71,7 @@ function MastersPage() {
     if (!confirm('削除してもいいですか？')) return
     try {
       const endpoint = `/api/masters/${activeTab}`
-      await axios.delete(`${API_URL}${endpoint}/${id}`)
+      await axios.delete(`${API_URL}${endpoint}/${id}`, { headers: authHeaders() })
       alert('削除しました')
       fetchData()
     } catch (error) {
@@ -85,17 +95,7 @@ function MastersPage() {
     <div className="space-y-4">
       {editingId && (
         <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4 mb-6">
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">現場ID</label>
-              <input
-                placeholder="P001"
-                value={formData.id || ''}
-                onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                disabled={editingId !== 'new'}
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">現場名</label>
               <input
@@ -140,7 +140,6 @@ function MastersPage() {
         <table className="w-full">
           <thead className="bg-gray-100 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">現場ID</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">現場名</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">所在地</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">操作</th>
@@ -149,7 +148,6 @@ function MastersPage() {
           <tbody className="divide-y divide-gray-200">
             {projects.map((project) => (
               <tr key={project.id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{project.id}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{project.name}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{project.location}</td>
                 <td className="px-6 py-4 text-sm space-x-2">
@@ -180,16 +178,6 @@ function MastersPage() {
       {editingId && (
         <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4 mb-6">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">社員ID</label>
-              <input
-                placeholder="S001"
-                value={formData.id || ''}
-                onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                disabled={editingId !== 'new'}
-              />
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">氏名</label>
               <input
@@ -234,7 +222,6 @@ function MastersPage() {
         <table className="w-full">
           <thead className="bg-gray-100 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">社員ID</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">氏名</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">メールアドレス</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">操作</th>
@@ -243,10 +230,8 @@ function MastersPage() {
           <tbody className="divide-y divide-gray-200">
             {staff.map((s) => (
               <tr key={s.id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{s.id}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{s.name}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{s.email}</td>
-                <td className="px-6 py-4 text-sm text-gray-600">{s.role}</td>
                 <td className="px-6 py-4 text-sm space-x-2">
                   <button
                     onClick={() => handleEdit(s)}
@@ -274,17 +259,7 @@ function MastersPage() {
     <div className="space-y-4">
       {editingId && (
         <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 space-y-4 mb-6">
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">項目マスターID</label>
-              <input
-                placeholder="M001"
-                value={formData.id || ''}
-                onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                disabled={editingId !== 'new'}
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">区分</label>
               <input
@@ -329,7 +304,6 @@ function MastersPage() {
         <table className="w-full">
           <thead className="bg-gray-100 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">項目マスターID</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">区分</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">点検項目内容</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">操作</th>
@@ -338,7 +312,6 @@ function MastersPage() {
           <tbody className="divide-y divide-gray-200">
             {inspectionItems.map((item) => (
               <tr key={item.id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.id}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{item.category}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{item.description}</td>
                 <td className="px-6 py-4 text-sm space-x-2">

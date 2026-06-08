@@ -7,6 +7,8 @@ import InspectionDetail from '../components/InspectionDetail'
 function DashboardPage({ user, onLogout, onOpenMasters }) {
   const [activeTab, setActiveTab] = useState('list')
   const [inspections, setInspections] = useState([])
+  const [projects, setProjects] = useState([])
+  const [staff, setStaff] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [editingId, setEditingId] = useState(null)
   const [viewingId, setViewingId] = useState(null)
@@ -22,7 +24,21 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
 
   useEffect(() => {
     fetchInspections()
+    fetchMasters()
   }, [])
+
+  const fetchMasters = async () => {
+    try {
+      const [projectsRes, staffRes] = await Promise.all([
+        axios.get(`${getApiUrl()}/api/masters/projects`, { headers: authHeaders() }),
+        axios.get(`${getApiUrl()}/api/masters/staff`, { headers: authHeaders() })
+      ])
+      setProjects(projectsRes.data)
+      setStaff(staffRes.data)
+    } catch (error) {
+      console.error('Failed to fetch masters:', error)
+    }
+  }
 
   const fetchInspections = async () => {
     try {
@@ -180,6 +196,8 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
             <InspectionDetail
               inspectionId={viewingId}
               onBack={handleBackFromDetail}
+              projects={projects}
+              staff={staff}
             />
           ) : (
             <InspectionList
@@ -191,6 +209,8 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
                 setActiveTab('form')
               }}
               onDelete={handleDeleteInspection}
+              projects={projects}
+              staff={staff}
             />
           )
         ) : (

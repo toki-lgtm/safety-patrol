@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-function InspectionDetail({ inspectionId, onBack }) {
+function InspectionDetail({ inspectionId, onBack, projects = [], staff = [] }) {
+  const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
+  const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
   const getApiUrl = () => {
     const isDev = process.env.NODE_ENV !== 'production'
     return isDev ? 'http://localhost:3000' : 'https://portal-api-hhlx.onrender.com'
@@ -130,10 +132,6 @@ function InspectionDetail({ inspectionId, onBack }) {
           <h3 className="text-sm font-semibold text-gray-500 uppercase mb-4">基本情報</h3>
           <dl className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div>
-              <dt className="text-xs text-gray-500">点検ID</dt>
-              <dd className="text-sm font-medium text-gray-900 mt-0.5">{inspection.inspection_id || '-'}</dd>
-            </div>
-            <div>
               <dt className="text-xs text-gray-500">点検日</dt>
               <dd className="text-sm font-medium text-gray-900 mt-0.5">
                 {inspection.inspection_date
@@ -142,16 +140,22 @@ function InspectionDetail({ inspectionId, onBack }) {
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500">現場ID</dt>
-              <dd className="text-sm font-medium text-gray-900 mt-0.5">{inspection.project_id || '-'}</dd>
+              <dt className="text-xs text-gray-500">現場</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">
+                {projectMap[inspection.project_id] || inspection.project_id || '-'}
+              </dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500">検査員ID</dt>
-              <dd className="text-sm font-medium text-gray-900 mt-0.5">{inspection.inspector_id || '-'}</dd>
+              <dt className="text-xs text-gray-500">検査員</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">
+                {staffMap[inspection.inspector_id] || inspection.inspector_id || '-'}
+              </dd>
             </div>
             <div>
-              <dt className="text-xs text-gray-500">作業所長ID</dt>
-              <dd className="text-sm font-medium text-gray-900 mt-0.5">{inspection.manager_id || '-'}</dd>
+              <dt className="text-xs text-gray-500">作業所長</dt>
+              <dd className="text-sm font-medium text-gray-900 mt-0.5">
+                {staffMap[inspection.manager_id] || inspection.manager_id || '-'}
+              </dd>
             </div>
             <div>
               <dt className="text-xs text-gray-500">指摘件数</dt>

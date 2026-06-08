@@ -1,4 +1,6 @@
-function InspectionList({ inspections, isLoading, onEdit, onDelete, onView }) {
+function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, projects = [], staff = [] }) {
+  const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
+  const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
   const getStatusColor = (status) => {
     switch (status) {
       case 'approved':
@@ -62,7 +64,6 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView }) {
         <table className="w-full">
           <thead className="bg-gray-100 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">点検ID</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">日付</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">現場</th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">検査員</th>
@@ -80,17 +81,14 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView }) {
                   className="hover:bg-gray-50 transition cursor-pointer"
                   onClick={() => onView && onView(inspection.id)}
                 >
-                  <td className="px-4 py-4 text-sm font-medium text-gray-900">
-                    {inspection.inspection_id || '-'}
-                  </td>
                   <td className="px-4 py-4 text-sm text-gray-600">
                     {formatDate(inspection.inspection_date)}
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-600">
-                    {inspection.project_id || '-'}
+                    {projectMap[inspection.project_id] || inspection.project_id || '-'}
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-600">
-                    {inspection.inspector_id || '-'}
+                    {staffMap[inspection.inspector_id] || inspection.inspector_id || '-'}
                   </td>
                   <td className="px-4 py-4 text-sm">
                     {hasIssues ? (
