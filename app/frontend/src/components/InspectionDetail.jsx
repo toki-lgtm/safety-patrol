@@ -3,6 +3,8 @@ import axios from 'axios'
 
 // report_url が実ファイルパスを指していれば「保存済みPDFあり」とみなす
 const hasStoredPdf = (insp) => !!insp && typeof insp.report_url === 'string' && insp.report_url.startsWith('reports/')
+// 'archived:' で始まれば共有ドライブへアーカイブ済み（写真・PDFはクラウドから削除済み）
+const isArchived = (insp) => !!insp && typeof insp.report_url === 'string' && insp.report_url.startsWith('archived:')
 
 function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewPdf, projects = [], staff = [] }) {
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
@@ -150,7 +152,14 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
               ✏️ 編集
             </button>
           )}
-          {hasStoredPdf(inspection) ? (
+          {isArchived(inspection) ? (
+            <span
+              title="6ヶ月経過のため写真・PDFは社内ドライブへ移動済み"
+              className="px-5 py-2.5 rounded-lg font-medium text-amber-700 bg-amber-50 border border-amber-200"
+            >
+              📦 アーカイブ済み
+            </span>
+          ) : hasStoredPdf(inspection) ? (
             <button
               onClick={() => onViewPdf && onViewPdf(inspection.id)}
               className="px-5 py-2.5 rounded-lg font-medium text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition"
@@ -179,6 +188,13 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
             </span>
           </div>
         </div>
+
+        {/* アーカイブ済み通知 */}
+        {isArchived(inspection) && (
+          <div className="px-6 py-3 bg-amber-50 border-b border-amber-200 text-sm text-amber-800">
+            📦 この点検は6ヶ月経過のためアーカイブ済みです。写真・PDFは社内ドライブ（共有ドライブ）に保存されており、クラウドからは削除されています。点検記録はこのまま閲覧できます。
+          </div>
+        )}
 
         {/* 基本情報 */}
         <div className="p-6 border-b border-gray-200">

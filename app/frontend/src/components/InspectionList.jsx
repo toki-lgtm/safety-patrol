@@ -1,5 +1,7 @@
 // report_url が実ファイルパスを指していれば「保存済みPDFあり」とみなす
 const hasStoredPdf = (insp) => typeof insp.report_url === 'string' && insp.report_url.startsWith('reports/')
+// 'archived:' で始まれば共有ドライブへアーカイブ済み（写真・PDFはクラウドから削除済み）
+const isArchived = (insp) => typeof insp.report_url === 'string' && insp.report_url.startsWith('archived:')
 
 function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGeneratePdf, onViewPdf, pdfBusyId, projects = [], staff = [] }) {
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
@@ -135,7 +137,14 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
                           編集
                         </button>
                       )}
-                      {hasStoredPdf(inspection) ? (
+                      {isArchived(inspection) ? (
+                        <span
+                          title="6ヶ月経過のため写真・PDFは社内ドライブへ移動済み"
+                          className="px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded"
+                        >
+                          📦 アーカイブ済み
+                        </span>
+                      ) : hasStoredPdf(inspection) ? (
                         <button
                           onClick={() => onViewPdf && onViewPdf(inspection.id)}
                           className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-300 rounded hover:bg-purple-100 transition"
