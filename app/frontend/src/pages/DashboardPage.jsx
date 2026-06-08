@@ -3,6 +3,7 @@ import axios from 'axios'
 import InspectionForm from '../components/InspectionForm'
 import InspectionList from '../components/InspectionList'
 import InspectionDetail from '../components/InspectionDetail'
+import { generateInspectionPdf } from '../lib/inspectionPdf'
 
 function DashboardPage({ user, onLogout, onOpenMasters }) {
   const [activeTab, setActiveTab] = useState('list')
@@ -12,6 +13,10 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
   const [isLoading, setIsLoading] = useState(true)
   const [editingId, setEditingId] = useState(null)
   const [viewingId, setViewingId] = useState(null)
+  const [pdfBusyId, setPdfBusyId] = useState(null)
+
+  const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
+  const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
 
   const getApiUrl = () => {
     const isDev = process.env.NODE_ENV !== 'production'
@@ -114,6 +119,49 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
     setViewingId(null)
   }
 
+  const handleEditInspection = (id) => {
+    const target = inspections.find(i => i.id === id)
+    if (target && target.report_url) {
+      alert('この点検はPDF生成済みのため編集できません')
+      return
+    }
+    setEditingId(id)
+    setViewingId(null)
+    setActiveTab('form')
+  }
+
+  // PDFを生成 → 生成済みフラグを立てる（以後ロック）。更新後の点検データを返す。
+  const generatePdfForInspection = async (fullInspection) => {
+    await generateInspectionPdf(fullInspection, { projectMap, staffMap })
+    const res = await axios.patch(
+      `${getApiUrl()}/api/inspections/${fullInspection.id}/pdf-generated`,
+      {},
+      { headers: authHeaders() }
+    )
+    const updated = res.data
+    setInspections(prev => prev.map(insp => insp.id === updated.id ? { ...insp, ...updated } : insp))
+    return updated
+  }
+
+  // 一覧からのPDF生成: 明細を含む完全データを取得してから生成
+  const handleGeneratePdfFromList = async (id) => {
+    if (pdfBusyId) return
+    try {
+      setPdfBusyId(id)
+      const res = await axios.get(
+        `${getApiUrl()}/api/inspections/${id}`,
+        { headers: authHeaders() }
+      )
+      await generatePdfForInspection(res.data)
+      alert('PDFを生成しました。この点検は編集できなくなります。')
+    } catch (error) {
+      console.error('PDF生成に失敗:', error)
+      alert('PDF生成に失敗しました')
+    } finally {
+      setPdfBusyId(null)
+    }
+  }
+
   const editingInspection = editingId ? inspections.find(i => i.id === editingId) : null
 
   return (
@@ -196,6 +244,8 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
             <InspectionDetail
               inspectionId={viewingId}
               onBack={handleBackFromDetail}
+              onEdit={handleEditInspection}
+              onGeneratePdf={generatePdfForInspection}
               projects={projects}
               staff={staff}
             />
@@ -204,11 +254,10 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
               inspections={inspections}
               isLoading={isLoading}
               onView={handleViewInspection}
-              onEdit={(id) => {
-                setEditingId(id)
-                setActiveTab('form')
-              }}
+              onEdit={handleEditInspection}
               onDelete={handleDeleteInspection}
+              onGeneratePdf={handleGeneratePdfFromList}
+              pdfBusyId={pdfBusyId}
               projects={projects}
               staff={staff}
             />

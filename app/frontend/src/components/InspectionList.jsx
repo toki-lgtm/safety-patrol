@@ -1,4 +1,4 @@
-function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, projects = [], staff = [] }) {
+function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGeneratePdf, pdfBusyId, projects = [], staff = [] }) {
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
   const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
   const getStatusColor = (status) => {
@@ -109,18 +109,35 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, proj
                     </span>
                   </td>
                   <td className="px-4 py-4 text-sm" onClick={e => e.stopPropagation()}>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => onView && onView(inspection.id)}
                         className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition"
                       >
                         詳細
                       </button>
+                      {inspection.report_url ? (
+                        <button
+                          disabled
+                          title="PDF生成済みのため編集できません"
+                          className="px-3 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded cursor-not-allowed"
+                        >
+                          🔒 編集
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onEdit(inspection.id)}
+                          className="px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-300 rounded hover:bg-blue-50 transition"
+                        >
+                          編集
+                        </button>
+                      )}
                       <button
-                        onClick={() => onEdit(inspection.id)}
-                        className="px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-300 rounded hover:bg-blue-50 transition"
+                        onClick={() => onGeneratePdf && onGeneratePdf(inspection.id)}
+                        disabled={pdfBusyId === inspection.id}
+                        className="px-3 py-1.5 text-xs font-medium text-purple-600 border border-purple-300 rounded hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-wait"
                       >
-                        編集
+                        {pdfBusyId === inspection.id ? '生成中…' : (inspection.report_url ? '📄 PDF再生成' : '📄 PDF生成')}
                       </button>
                       <button
                         onClick={() => onDelete(inspection.id)}

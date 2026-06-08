@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-function InspectionDetail({ inspectionId, onBack, projects = [], staff = [] }) {
+function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, projects = [], staff = [] }) {
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
   const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
   const getApiUrl = () => {
@@ -17,6 +17,22 @@ function InspectionDetail({ inspectionId, onBack, projects = [], staff = [] }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [enlargedImage, setEnlargedImage] = useState(null)
+  const [pdfBusy, setPdfBusy] = useState(false)
+
+  const handleGeneratePdf = async () => {
+    if (!inspection || pdfBusy || !onGeneratePdf) return
+    try {
+      setPdfBusy(true)
+      const updated = await onGeneratePdf(inspection)
+      setInspection(prev => ({ ...prev, ...updated }))
+      alert('PDFを生成しました。この点検は編集できなくなります。')
+    } catch (err) {
+      console.error('PDF生成に失敗:', err)
+      alert('PDF生成に失敗しました')
+    } finally {
+      setPdfBusy(false)
+    }
+  }
 
   useEffect(() => {
     if (!inspectionId) return
@@ -106,14 +122,39 @@ function InspectionDetail({ inspectionId, onBack, projects = [], staff = [] }) {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* 戻るボタン */}
-      <div className="mb-4">
+      {/* 操作バー */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <button
           onClick={onBack}
           className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
         >
           ← 一覧に戻る
         </button>
+        <div className="flex flex-wrap gap-2">
+          {inspection.report_url ? (
+            <button
+              disabled
+              title="PDF生成済みのため編集できません"
+              className="px-5 py-2.5 rounded-lg font-medium text-gray-400 bg-gray-100 cursor-not-allowed"
+            >
+              🔒 編集
+            </button>
+          ) : (
+            <button
+              onClick={() => onEdit && onEdit(inspection.id)}
+              className="px-5 py-2.5 rounded-lg font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition"
+            >
+              ✏️ 編集
+            </button>
+          )}
+          <button
+            onClick={handleGeneratePdf}
+            disabled={pdfBusy}
+            className="px-5 py-2.5 rounded-lg font-medium text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition disabled:opacity-50 disabled:cursor-wait"
+          >
+            {pdfBusy ? '生成中…' : (inspection.report_url ? '📄 PDF再生成' : '📄 PDF生成')}
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
