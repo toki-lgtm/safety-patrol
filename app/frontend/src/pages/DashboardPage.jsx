@@ -14,6 +14,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
   const [editingId, setEditingId] = useState(null)
   const [viewingId, setViewingId] = useState(null)
   const [pdfBusyId, setPdfBusyId] = useState(null)
+  const [sendBusyId, setSendBusyId] = useState(null)
   // 権限: role='admin'(全機能) / 'member'(閲覧・新規点検), staffId=本人のスタッフID
   const [perms, setPerms] = useState({ role: 'member', staffId: null })
   const isAdmin = perms.role === 'admin'
@@ -201,6 +202,35 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
     }
   }
 
+  // 生成済みPDFを作業所長へメール送信（CC＝レポートCC対象の社員）。送信後 report_sent_at を返す。
+  const handleSendReport = async (id) => {
+    if (sendBusyId) return null
+    const target = inspections.find(i => i.id === id)
+    const confirmMsg = target?.report_sent_at
+      ? 'この点検報告を作業所長へ再送信します。よろしいですか？'
+      : '点検報告PDFを作業所長へメール送信します。\n（社員管理で「レポートCC対象」に設定した社員にもCCで送られます）\n\nよろしいですか？'
+    if (!confirm(confirmMsg)) return null
+    try {
+      setSendBusyId(id)
+      const res = await axios.post(
+        `${getApiUrl()}/api/inspections/${id}/send-report`,
+        {},
+        { headers: authHeaders() }
+      )
+      const { to, cc, sent_at } = res.data
+      setInspections(prev => prev.map(insp => insp.id === id ? { ...insp, report_sent_at: sent_at } : insp))
+      const ccLine = cc && cc.length ? `\nCC: ${cc.join(', ')}` : ''
+      alert(`メールを送信しました。\n宛先: ${to}${ccLine}`)
+      return { report_sent_at: sent_at }
+    } catch (error) {
+      console.error('メール送信に失敗:', error)
+      alert(error.response?.data?.error || 'メール送信に失敗しました')
+      throw error
+    } finally {
+      setSendBusyId(null)
+    }
+  }
+
   const editingInspection = editingId ? inspections.find(i => i.id === editingId) : null
 
   return (
@@ -286,6 +316,8 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
               onEdit={handleEditInspection}
               onGeneratePdf={generatePdfForInspection}
               onViewPdf={handleViewPdf}
+              onSendReport={handleSendReport}
+              sendBusyId={sendBusyId}
               projects={projects}
               staff={staff}
               isAdmin={isAdmin}
@@ -300,6 +332,8 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
               onDelete={handleDeleteInspection}
               onGeneratePdf={handleGeneratePdfFromList}
               onViewPdf={handleViewPdf}
+              onSendReport={handleSendReport}
+              sendBusyId={sendBusyId}
               pdfBusyId={pdfBusyId}
               projects={projects}
               staff={staff}

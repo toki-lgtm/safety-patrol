@@ -3,7 +3,7 @@ const hasStoredPdf = (insp) => typeof insp.report_url === 'string' && insp.repor
 // 'archived:' で始まれば共有ドライブへアーカイブ済み（写真・PDFはクラウドから削除済み）
 const isArchived = (insp) => typeof insp.report_url === 'string' && insp.report_url.startsWith('archived:')
 
-function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGeneratePdf, onViewPdf, pdfBusyId, projects = [], staff = [], isAdmin = false, myStaffId = null }) {
+function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGeneratePdf, onViewPdf, onSendReport, sendBusyId, pdfBusyId, projects = [], staff = [], isAdmin = false, myStaffId = null }) {
   // 編集/PDF発行は管理者は全件、メンバーは自分が検査官の案件のみ
   const canManage = (insp) => isAdmin || (!!myStaffId && insp.inspector_id === myStaffId)
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
@@ -149,12 +149,26 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
                           📦 アーカイブ済み
                         </span>
                       ) : hasStoredPdf(inspection) ? (
-                        <button
-                          onClick={() => onViewPdf && onViewPdf(inspection.id)}
-                          className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-300 rounded hover:bg-purple-100 transition"
-                        >
-                          📄 PDF表示
-                        </button>
+                        <>
+                          <button
+                            onClick={() => onViewPdf && onViewPdf(inspection.id)}
+                            className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-300 rounded hover:bg-purple-100 transition"
+                          >
+                            📄 PDF表示
+                          </button>
+                          {canManage(inspection) && (
+                            <button
+                              onClick={() => onSendReport && onSendReport(inspection.id)}
+                              disabled={sendBusyId === inspection.id}
+                              title="作業所長へPDFをメール送信（CC対象社員にも送信）"
+                              className="px-3 py-1.5 text-xs font-medium text-teal-700 bg-teal-50 border border-teal-300 rounded hover:bg-teal-100 transition disabled:opacity-50 disabled:cursor-wait"
+                            >
+                              {sendBusyId === inspection.id
+                                ? '送信中…'
+                                : inspection.report_sent_at ? '📧 再送信' : '📧 メール送信'}
+                            </button>
+                          )}
+                        </>
                       ) : canManage(inspection) ? (
                         <button
                           onClick={() => onGeneratePdf && onGeneratePdf(inspection.id)}

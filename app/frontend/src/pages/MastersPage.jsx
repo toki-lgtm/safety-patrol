@@ -208,7 +208,21 @@ function MastersPage() {
                 <option value="admin">管理者（全機能）</option>
               </select>
             </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={!!formData.report_cc}
+                  onChange={(e) => setFormData({ ...formData, report_cc: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">📧 レポートメールのCCに追加</span>
+              </label>
+            </div>
           </div>
+          <p className="text-xs text-gray-500 -mt-1">
+            ※チェックすると、点検報告PDFのメール送信時にこの社員が常にCCに入ります（宛先は各現場の作業所長）。
+          </p>
           <div className="flex gap-2">
             <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
               保存
@@ -237,6 +251,7 @@ function MastersPage() {
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">氏名</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">メールアドレス</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">権限</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">レポートCC</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">操作</th>
             </tr>
           </thead>
@@ -250,6 +265,13 @@ function MastersPage() {
                     <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">管理者</span>
                   ) : (
                     <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">メンバー</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-sm">
+                  {s.report_cc ? (
+                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">📧 CC対象</span>
+                  ) : (
+                    <span className="text-gray-300 text-xs">—</span>
                   )}
                 </td>
                 <td className="px-6 py-4 text-sm space-x-2">

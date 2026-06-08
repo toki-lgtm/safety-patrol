@@ -6,7 +6,7 @@ const hasStoredPdf = (insp) => !!insp && typeof insp.report_url === 'string' && 
 // 'archived:' で始まれば共有ドライブへアーカイブ済み（写真・PDFはクラウドから削除済み）
 const isArchived = (insp) => !!insp && typeof insp.report_url === 'string' && insp.report_url.startsWith('archived:')
 
-function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewPdf, projects = [], staff = [], isAdmin = false, myStaffId = null }) {
+function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewPdf, onSendReport, projects = [], staff = [], isAdmin = false, myStaffId = null }) {
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
   const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
   const getApiUrl = () => {
@@ -23,6 +23,20 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
   const [error, setError] = useState(null)
   const [enlargedImage, setEnlargedImage] = useState(null)
   const [pdfBusy, setPdfBusy] = useState(false)
+  const [sendBusy, setSendBusy] = useState(false)
+
+  const handleSendReport = async () => {
+    if (!inspection || sendBusy || !onSendReport) return
+    try {
+      setSendBusy(true)
+      const updated = await onSendReport(inspection.id)
+      if (updated) setInspection(prev => ({ ...prev, ...updated }))
+    } catch (err) {
+      // 送信失敗時のメッセージは呼び出し元(DashboardPage)で表示済み
+    } finally {
+      setSendBusy(false)
+    }
+  }
 
   const handleGeneratePdf = async () => {
     if (!inspection || pdfBusy || !onGeneratePdf) return
@@ -164,12 +178,24 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
               📦 アーカイブ済み
             </span>
           ) : hasStoredPdf(inspection) ? (
-            <button
-              onClick={() => onViewPdf && onViewPdf(inspection.id)}
-              className="px-5 py-2.5 rounded-lg font-medium text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition"
-            >
-              📄 PDF表示
-            </button>
+            <>
+              <button
+                onClick={() => onViewPdf && onViewPdf(inspection.id)}
+                className="px-5 py-2.5 rounded-lg font-medium text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition"
+              >
+                📄 PDF表示
+              </button>
+              {canManage && (
+                <button
+                  onClick={handleSendReport}
+                  disabled={sendBusy}
+                  title="作業所長へPDFをメール送信（CC対象社員にも送信）"
+                  className="px-5 py-2.5 rounded-lg font-medium text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 transition disabled:opacity-50 disabled:cursor-wait"
+                >
+                  {sendBusy ? '送信中…' : inspection.report_sent_at ? '📧 再送信' : '📧 メール送信'}
+                </button>
+              )}
+            </>
           ) : canManage ? (
             <button
               onClick={handleGeneratePdf}
@@ -236,6 +262,14 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
                 {issueCount} 件
               </dd>
             </div>
+            {inspection.report_sent_at && (
+              <div>
+                <dt className="text-xs text-gray-500">メール送信</dt>
+                <dd className="text-sm font-medium text-teal-700 mt-0.5">
+                  📧 {new Date(inspection.report_sent_at).toLocaleString('ja-JP')}
+                </dd>
+              </div>
+            )}
           </dl>
 
           {/* コメント */}
