@@ -773,12 +773,14 @@ function InspectionForm({ inspection, onSubmit }) {
       </div>
 
       {/* プログレスバー */}
-      <ProgressBar />
+      {/* ※ 内部定義の関数は JSX要素(<X/>)で呼ぶと毎レンダー再マウントされ
+           入力欄のフォーカス/IME変換が壊れるため、関数として呼び出してJSXを展開する */}
+      {ProgressBar()}
 
       {/* ステップコンテンツ */}
-      {isBasicStep && <StepBasic />}
-      {isCategoryStep && <StepCategory />}
-      {isSummaryStep && <StepSummary />}
+      {isBasicStep && StepBasic()}
+      {isCategoryStep && StepCategory()}
+      {isSummaryStep && StepSummary()}
     </div>
   )
 }
