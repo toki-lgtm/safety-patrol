@@ -56,6 +56,12 @@ function App() {
     window.location.href = portalUrl
   }
 
+  // ✅ セッションを保ったままポータルへ戻る（ログアウトとは別動線）
+  const handleBackToPortal = () => {
+    const portalUrl = import.meta.env.VITE_PORTAL_URL || 'https://portal-app-beryl.vercel.app'
+    window.location.href = portalUrl
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-100 dark:bg-ink-950 flex items-center justify-center transition-colors">
@@ -114,6 +120,7 @@ function App() {
     <DashboardPage
       user={user}
       onLogout={handleLogout}
+      onBackToPortal={handleBackToPortal}
       onOpenMasters={() => setCurrentPage('masters')}
     />
   )

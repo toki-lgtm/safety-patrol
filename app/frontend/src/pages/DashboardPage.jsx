@@ -7,9 +7,9 @@ import CorrectionList from '../components/CorrectionList'
 import { generateInspectionPdf } from '../lib/inspectionPdf'
 import Button from '../components/ui/Button'
 import ThemeToggle from '../components/ui/ThemeToggle'
-import { ClipboardCheck, Plus, Wrench, Settings, LogOut } from 'lucide-react'
+import { ClipboardCheck, Plus, Wrench, Settings, LogOut, LayoutGrid } from 'lucide-react'
 
-function DashboardPage({ user, onLogout, onOpenMasters }) {
+function DashboardPage({ user, onLogout, onBackToPortal, onOpenMasters }) {
   const [activeTab, setActiveTab] = useState('list')
   const [inspections, setInspections] = useState([])
   const [projects, setProjects] = useState([])
@@ -272,6 +272,18 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
                 <p className="text-sm font-medium text-slate-900 dark:text-white leading-tight">{user.name}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight">{user.email}</p>
               </div>
+
+              {onBackToPortal && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={onBackToPortal}
+                  className="h-10 gap-1.5"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  <span className="hidden sm:inline">ポータルに戻る</span>
+                </Button>
+              )}
 
               <ThemeToggle />
 
