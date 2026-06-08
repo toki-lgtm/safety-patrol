@@ -1,4 +1,7 @@
-function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGeneratePdf, pdfBusyId, projects = [], staff = [] }) {
+// report_url が実ファイルパスを指していれば「保存済みPDFあり」とみなす
+const hasStoredPdf = (insp) => typeof insp.report_url === 'string' && insp.report_url.startsWith('reports/')
+
+function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGeneratePdf, onViewPdf, pdfBusyId, projects = [], staff = [] }) {
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
   const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
   const getStatusColor = (status) => {
@@ -132,13 +135,22 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
                           編集
                         </button>
                       )}
-                      <button
-                        onClick={() => onGeneratePdf && onGeneratePdf(inspection.id)}
-                        disabled={pdfBusyId === inspection.id}
-                        className="px-3 py-1.5 text-xs font-medium text-purple-600 border border-purple-300 rounded hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-wait"
-                      >
-                        {pdfBusyId === inspection.id ? '生成中…' : (inspection.report_url ? '📄 PDF再生成' : '📄 PDF生成')}
-                      </button>
+                      {hasStoredPdf(inspection) ? (
+                        <button
+                          onClick={() => onViewPdf && onViewPdf(inspection.id)}
+                          className="px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-300 rounded hover:bg-purple-100 transition"
+                        >
+                          📄 PDF表示
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => onGeneratePdf && onGeneratePdf(inspection.id)}
+                          disabled={pdfBusyId === inspection.id}
+                          className="px-3 py-1.5 text-xs font-medium text-purple-600 border border-purple-300 rounded hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-wait"
+                        >
+                          {pdfBusyId === inspection.id ? '生成中…' : '📄 PDF生成'}
+                        </button>
+                      )}
                       <button
                         onClick={() => onDelete(inspection.id)}
                         className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 transition"

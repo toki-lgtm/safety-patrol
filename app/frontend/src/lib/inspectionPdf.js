@@ -43,9 +43,10 @@ const imgTag = (dataUrl) =>
     : `<span style="display:inline-block;width:120px;height:120px;line-height:120px;text-align:center;color:#9ca3af;border:1px dashed #d1d5db;border-radius:4px;margin:0 6px 6px 0;font-size:11px;">画像読込失敗</span>`
 
 /**
- * 点検レポートのPDFを生成してダウンロードする。
+ * 点検レポートのPDFを生成し、Blob とファイル名を返す（保存はしない）。
  * @param {object} inspection - inspection_details を含む完全な点検データ
  * @param {object} opts - { projectMap, staffMap }
+ * @returns {Promise<{ blob: Blob, filename: string }>}
  */
 export async function generateInspectionPdf(inspection, { projectMap = {}, staffMap = {} } = {}) {
   const details = inspection.inspection_details || []
@@ -181,8 +182,9 @@ export async function generateInspectionPdf(inspection, { projectMap = {}, staff
       heightLeft -= pageH
     }
 
-    const fname = `点検報告_${(projectName || '').replace(/[\\/:*?"<>|]/g, '')}_${formatDate(inspection.inspection_date).replace(/\//g, '')}.pdf`
-    pdf.save(fname)
+    const filename = `点検報告_${(projectName || '').replace(/[\\/:*?"<>|]/g, '')}_${formatDate(inspection.inspection_date).replace(/\//g, '')}.pdf`
+    const blob = pdf.output('blob')
+    return { blob, filename }
   } finally {
     document.body.removeChild(container)
   }

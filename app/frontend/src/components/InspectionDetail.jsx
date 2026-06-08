@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, projects = [], staff = [] }) {
+// report_url が実ファイルパスを指していれば「保存済みPDFあり」とみなす
+const hasStoredPdf = (insp) => !!insp && typeof insp.report_url === 'string' && insp.report_url.startsWith('reports/')
+
+function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewPdf, projects = [], staff = [] }) {
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
   const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
   const getApiUrl = () => {
@@ -25,7 +28,7 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, project
       setPdfBusy(true)
       const updated = await onGeneratePdf(inspection)
       setInspection(prev => ({ ...prev, ...updated }))
-      alert('PDFを生成しました。この点検は編集できなくなります。')
+      alert('PDFを生成・保存しました。「PDF表示」からいつでも閲覧できます。この点検は編集できなくなります。')
     } catch (err) {
       console.error('PDF生成に失敗:', err)
       alert('PDF生成に失敗しました')
@@ -147,13 +150,22 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, project
               ✏️ 編集
             </button>
           )}
-          <button
-            onClick={handleGeneratePdf}
-            disabled={pdfBusy}
-            className="px-5 py-2.5 rounded-lg font-medium text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition disabled:opacity-50 disabled:cursor-wait"
-          >
-            {pdfBusy ? '生成中…' : (inspection.report_url ? '📄 PDF再生成' : '📄 PDF生成')}
-          </button>
+          {hasStoredPdf(inspection) ? (
+            <button
+              onClick={() => onViewPdf && onViewPdf(inspection.id)}
+              className="px-5 py-2.5 rounded-lg font-medium text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition"
+            >
+              📄 PDF表示
+            </button>
+          ) : (
+            <button
+              onClick={handleGeneratePdf}
+              disabled={pdfBusy}
+              className="px-5 py-2.5 rounded-lg font-medium text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 transition disabled:opacity-50 disabled:cursor-wait"
+            >
+              {pdfBusy ? '生成中…' : '📄 PDF生成'}
+            </button>
+          )}
         </div>
       </div>
 

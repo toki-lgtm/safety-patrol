@@ -130,20 +130,22 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
     setActiveTab('form')
   }
 
-  // PDFを生成 → 生成済みフラグを立てる（以後ロック）。更新後の点検データを返す。
+  // PDFを生成 → 非公開ストレージへ保存 → 編集ロック。更新後の点検データを返す。
   const generatePdfForInspection = async (fullInspection) => {
-    await generateInspectionPdf(fullInspection, { projectMap, staffMap })
-    const res = await axios.patch(
-      `${getApiUrl()}/api/inspections/${fullInspection.id}/pdf-generated`,
-      {},
-      { headers: authHeaders() }
+    const { blob, filename } = await generateInspectionPdf(fullInspection, { projectMap, staffMap })
+    const form = new FormData()
+    form.append('report', blob, filename)
+    const res = await axios.post(
+      `${getApiUrl()}/api/inspections/${fullInspection.id}/report`,
+      form,
+      { headers: authHeaders() } // multipart 境界はブラウザが自動設定
     )
     const updated = res.data
     setInspections(prev => prev.map(insp => insp.id === updated.id ? { ...insp, ...updated } : insp))
     return updated
   }
 
-  // 一覧からのPDF生成: 明細を含む完全データを取得してから生成
+  // 一覧からのPDF生成: 明細を含む完全データを取得してから生成・保存
   const handleGeneratePdfFromList = async (id) => {
     if (pdfBusyId) return
     try {
@@ -153,12 +155,29 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
         { headers: authHeaders() }
       )
       await generatePdfForInspection(res.data)
-      alert('PDFを生成しました。この点検は編集できなくなります。')
+      alert('PDFを生成・保存しました。「PDF表示」からいつでも閲覧できます。この点検は編集できなくなります。')
     } catch (error) {
       console.error('PDF生成に失敗:', error)
       alert('PDF生成に失敗しました')
     } finally {
       setPdfBusyId(null)
+    }
+  }
+
+  // 保存済みPDFを表示（署名付きURLをアプリ越しに取得して新規タブで開く）
+  const handleViewPdf = async (id) => {
+    const win = window.open('', '_blank') // クリック直後に開いてポップアップブロック回避
+    try {
+      const res = await axios.get(
+        `${getApiUrl()}/api/inspections/${id}/report-url`,
+        { headers: authHeaders() }
+      )
+      if (win) win.location = res.data.url
+      else window.open(res.data.url, '_blank')
+    } catch (error) {
+      console.error('PDF表示に失敗:', error)
+      if (win) win.close()
+      alert('PDFの表示に失敗しました')
     }
   }
 
@@ -246,6 +265,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
               onBack={handleBackFromDetail}
               onEdit={handleEditInspection}
               onGeneratePdf={generatePdfForInspection}
+              onViewPdf={handleViewPdf}
               projects={projects}
               staff={staff}
             />
@@ -257,6 +277,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
               onEdit={handleEditInspection}
               onDelete={handleDeleteInspection}
               onGeneratePdf={handleGeneratePdfFromList}
+              onViewPdf={handleViewPdf}
               pdfBusyId={pdfBusyId}
               projects={projects}
               staff={staff}
