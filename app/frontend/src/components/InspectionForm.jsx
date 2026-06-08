@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import Button from './ui/Button'
+import Card from './ui/Card'
+import { Check, X, Camera, ChevronRight, ChevronLeft, Save, MapPin } from 'lucide-react'
 
 function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = null }) {
   // メンバーは検査員を自分に固定（管理者は自由選択）
@@ -369,17 +372,17 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
 
   if (masterLoading) {
     return (
-      <div className="text-center py-12">
-        <div className="text-4xl mb-4">⏳</div>
-        <p className="text-gray-600">マスタデータを読み込み中...</p>
+      <div className="text-center py-16">
+        <div className="inline-block w-10 h-10 border-4 border-slate-200 dark:border-ink-700 border-t-brand-600 rounded-full animate-spin mb-4" />
+        <p className="text-slate-500 dark:text-slate-400 text-base">マスタデータを読み込み中...</p>
       </div>
     )
   }
 
   // ---- プログレスバー ----
   const ProgressBar = () => (
-    <div className="px-6 pt-5 pb-3">
-      <div className="flex items-center gap-1 overflow-x-auto pb-1">
+    <div className="px-6 pt-5 pb-4 border-b border-slate-200 dark:border-ink-700">
+      <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
         {steps.map((step, idx) => {
           const label =
             step === 'basic'
@@ -392,61 +395,78 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
           return (
             <div key={step} className="flex items-center gap-1 flex-shrink-0">
               <div
-                className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold border-2 transition ${
+                className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold border-2 transition-all ${
                   isDone
-                    ? 'bg-green-600 border-green-600 text-white'
+                    ? 'bg-success-600 border-success-600 text-white'
                     : isCurrent
-                    ? 'bg-white border-green-600 text-green-600'
-                    : 'bg-white border-gray-300 text-gray-400'
+                    ? 'bg-white dark:bg-ink-800 border-brand-600 text-brand-600'
+                    : 'bg-white dark:bg-ink-800 border-slate-300 dark:border-ink-600 text-slate-400 dark:text-slate-500'
                 }`}
               >
-                {isDone ? '✓' : idx + 1}
+                {isDone ? <Check size={14} strokeWidth={3} /> : idx + 1}
               </div>
               <span
                 className={`text-xs whitespace-nowrap ${
-                  isCurrent ? 'text-green-700 font-semibold' : isDone ? 'text-green-600' : 'text-gray-400'
+                  isCurrent
+                    ? 'text-brand-700 dark:text-brand-400 font-semibold'
+                    : isDone
+                    ? 'text-success-600 dark:text-success-500'
+                    : 'text-slate-400 dark:text-slate-500'
                 }`}
               >
                 {label}
               </span>
               {idx < steps.length - 1 && (
-                <div className={`w-4 h-0.5 mx-1 ${idx < currentStep ? 'bg-green-600' : 'bg-gray-200'}`} />
+                <div className={`w-4 h-0.5 mx-1 rounded-full transition-all ${idx < currentStep ? 'bg-success-500' : 'bg-slate-200 dark:bg-ink-600'}`} />
               )}
             </div>
           )
         })}
       </div>
+      {/* 全体進捗バー */}
+      <div className="mt-3 h-1 bg-slate-100 dark:bg-ink-700 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-brand-600 rounded-full transition-all duration-300"
+          style={{ width: `${totalSteps > 1 ? (currentStep / (totalSteps - 1)) * 100 : 0}%` }}
+        />
+      </div>
     </div>
   )
 
   // ---- Step 1: 基本情報 ----
+  const inputBase = 'w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-ink-600 bg-white dark:bg-ink-700 text-slate-800 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-500/30 focus:outline-none text-base transition'
+  const labelBase = 'block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5'
+
   const StepBasic = () => (
-    <div className="p-6 space-y-5">
-      <h3 className="text-lg font-bold text-gray-800 border-b pb-2">基本情報</h3>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-ink-700">
+        <MapPin size={18} className="text-brand-600 dark:text-brand-400 flex-shrink-0" />
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">基本情報</h3>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            点検日 <span className="text-red-500">*</span>
+          <label className={labelBase}>
+            点検日 <span className="text-danger-500">*</span>
           </label>
           <input
             type="date"
             name="inspection_date"
             value={header.inspection_date}
             onChange={handleHeaderChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-base"
+            className={inputBase}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            現場 <span className="text-red-500">*</span>
+          <label className={labelBase}>
+            現場 <span className="text-danger-500">*</span>
           </label>
           <select
             name="project_id"
             value={header.project_id}
             onChange={handleHeaderChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-base bg-white"
+            className={inputBase}
           >
             <option value="">選択してください</option>
             {projects.map(p => (
@@ -456,15 +476,15 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            検査員 <span className="text-red-500">*</span>
+          <label className={labelBase}>
+            検査員 <span className="text-danger-500">*</span>
           </label>
           <select
             name="inspector_id"
             value={header.inspector_id}
             onChange={handleHeaderChange}
             disabled={lockInspector}
-            className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-base ${lockInspector ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : 'bg-white'}`}
+            className={`${inputBase} ${lockInspector ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
             <option value="">選択してください</option>
             {staff.map(s => (
@@ -472,19 +492,19 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
             ))}
           </select>
           {lockInspector && (
-            <p className="mt-1 text-xs text-gray-500">あなたが検査員として記録されます（変更不可）</p>
+            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">あなたが検査員として記録されます（変更不可）</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className={labelBase}>
             作業所長
           </label>
           <select
             name="manager_id"
             value={header.manager_id}
             onChange={handleHeaderChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-base bg-white"
+            className={inputBase}
           >
             <option value="">選択してください</option>
             {staff.map(s => (
@@ -496,12 +516,12 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
 
       {/* 対象区分選択 */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          対象区分 <span className="text-red-500">*</span>
-          <span className="ml-2 text-xs text-gray-500 font-normal">（1つ以上選択してください）</span>
+        <label className={labelBase}>
+          対象区分 <span className="text-danger-500">*</span>
+          <span className="ml-2 text-xs text-slate-400 dark:text-slate-500 font-normal">（1つ以上選択してください）</span>
         </label>
         {allCategories.length === 0 ? (
-          <p className="text-gray-400 text-sm">カテゴリマスタが登録されていません</p>
+          <p className="text-slate-400 dark:text-slate-500 text-sm">カテゴリマスタが登録されていません</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {allCategories.map(cat => {
@@ -511,16 +531,18 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
                   key={cat}
                   type="button"
                   onClick={() => handleCategoryToggle(cat)}
-                  className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 text-sm font-medium transition text-left ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all text-left min-h-[48px] ${
                     checked
-                      ? 'border-green-600 bg-green-50 text-green-700'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                      ? 'border-brand-600 bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-300'
+                      : 'border-slate-200 dark:border-ink-600 bg-white dark:bg-ink-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-ink-500 hover:bg-slate-50 dark:hover:bg-ink-600'
                   }`}
                 >
-                  <span className={`w-4 h-4 rounded flex items-center justify-center border flex-shrink-0 ${
-                    checked ? 'bg-green-600 border-green-600' : 'border-gray-300'
+                  <span className={`w-5 h-5 rounded-md flex items-center justify-center border-2 flex-shrink-0 transition-all ${
+                    checked
+                      ? 'bg-brand-600 border-brand-600'
+                      : 'border-slate-300 dark:border-ink-500'
                   }`}>
-                    {checked && <span className="text-white text-xs font-bold">✓</span>}
+                    {checked && <Check size={12} strokeWidth={3} className="text-white" />}
                   </span>
                   {cat}
                 </button>
@@ -532,13 +554,16 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
 
       {/* 次へボタン */}
       <div className="flex justify-end pt-2">
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size="lg"
           onClick={handleNextFromBasic}
-          className="px-8 py-4 bg-green-600 text-white font-semibold text-base rounded-lg hover:bg-green-700 transition"
+          className="gap-2 h-12"
         >
-          次へ →
-        </button>
+          次へ
+          <ChevronRight size={18} />
+        </Button>
       </div>
     </div>
   )
@@ -546,18 +571,18 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
   // ---- Step 2〜N: カテゴリ別詳細点検 ----
   const StepCategory = () => (
     <div className="p-6 space-y-4">
-      <h3 className="text-lg font-bold text-gray-800 border-b pb-2">
-        <span className="text-gray-400 text-sm font-normal mr-2">
+      <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-ink-700">
+        <span className="px-2.5 py-0.5 rounded-full bg-brand-100 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 text-xs font-semibold flex-shrink-0">
           {categoryStepIndex + 2} / {totalSteps - 1}
         </span>
-        {currentStepName}
-      </h3>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white truncate">{currentStepName}</h3>
+      </div>
 
       {currentItems.length === 0 ? (
-        <p className="text-gray-400 text-sm py-4">このカテゴリに点検項目がありません</p>
+        <p className="text-slate-400 dark:text-slate-500 text-sm py-4">このカテゴリに点検項目がありません</p>
       ) : (
-        <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden">
-          {currentItems.map(item => {
+        <div className="space-y-3">
+          {currentItems.map((item, itemIdx) => {
             const st = itemStates[item.id] || {
               result: '良',
               issue_content: '',
@@ -567,49 +592,69 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
             }
             const isIssue = st.result === '指摘あり'
             return (
-              <div key={item.id} className={`p-4 ${isIssue ? 'bg-red-50' : 'bg-white'}`}>
-                {/* 項目名 + 評価トグル */}
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <span className="text-sm text-gray-800 flex-1 min-w-0">{item.description}</span>
-                  <div className="flex rounded-lg overflow-hidden border border-gray-300 flex-shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleResultToggle(item.id, '良')}
-                      className={`px-5 py-2.5 text-sm font-medium transition ${
-                        !isIssue
-                          ? 'bg-green-600 text-white'
-                          : 'bg-white text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      良
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleResultToggle(item.id, '指摘あり')}
-                      className={`px-5 py-2.5 text-sm font-medium transition border-l border-gray-300 ${
-                        isIssue
-                          ? 'bg-red-600 text-white'
-                          : 'bg-white text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      指摘あり
-                    </button>
-                  </div>
+              <Card
+                key={item.id}
+                className={`overflow-hidden transition-all ${
+                  isIssue
+                    ? 'border-danger-300 dark:border-danger-500/40'
+                    : 'border-slate-200 dark:border-ink-700'
+                }`}
+              >
+                {/* 項目番号バー */}
+                <div className={`px-4 pt-3 pb-2 flex items-start gap-3 ${isIssue ? 'bg-danger-50 dark:bg-danger-500/10' : ''}`}>
+                  <span className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    isIssue
+                      ? 'bg-danger-600 text-white'
+                      : 'bg-slate-200 dark:bg-ink-600 text-slate-500 dark:text-slate-400'
+                  }`}>
+                    {itemIdx + 1}
+                  </span>
+                  <span className="text-sm text-slate-800 dark:text-slate-200 flex-1 min-w-0 pt-0.5 leading-relaxed">
+                    {item.description}
+                  </span>
+                </div>
+
+                {/* 合 / 指摘あり トグルボタン（現場でタップしやすい大きめサイズ） */}
+                <div className="px-4 pb-3 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleResultToggle(item.id, '良')}
+                    className={`flex-1 h-12 flex items-center justify-center gap-2 rounded-xl text-sm font-bold border-2 transition-all ${
+                      !isIssue
+                        ? 'bg-success-600 border-success-600 text-white shadow-sm'
+                        : 'bg-white dark:bg-ink-700 border-slate-300 dark:border-ink-600 text-slate-500 dark:text-slate-400 hover:border-success-400 hover:bg-success-50 dark:hover:bg-success-500/10'
+                    }`}
+                  >
+                    <Check size={16} strokeWidth={3} />
+                    合
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleResultToggle(item.id, '指摘あり')}
+                    className={`flex-1 h-12 flex items-center justify-center gap-2 rounded-xl text-sm font-bold border-2 transition-all ${
+                      isIssue
+                        ? 'bg-danger-600 border-danger-600 text-white shadow-sm'
+                        : 'bg-white dark:bg-ink-700 border-slate-300 dark:border-ink-600 text-slate-500 dark:text-slate-400 hover:border-danger-400 hover:bg-danger-50 dark:hover:bg-danger-500/10'
+                    }`}
+                  >
+                    <X size={16} strokeWidth={3} />
+                    不合
+                  </button>
                 </div>
 
                 {/* 指摘あり展開エリア */}
                 {isIssue && (
-                  <div className="mt-4 space-y-4 pl-0 sm:pl-4">
+                  <div className="mx-4 mb-4 space-y-4 p-4 bg-danger-50 dark:bg-danger-500/10 rounded-xl border border-danger-200 dark:border-danger-500/30">
                     {/* 指摘内容 */}
                     <div>
-                      <label className="block text-xs font-medium text-red-700 mb-1">
-                        指摘内容 <span className="text-red-500">*</span>
+                      <label className="block text-xs font-semibold text-danger-700 dark:text-danger-400 mb-1.5">
+                        指摘内容 <span className="text-danger-500">*</span>
                       </label>
 
                       {/* 過去の指摘内容から選択（同じ項目で過去に入力したもの）。クリックで下の入力欄に反映 */}
                       {(issueTemplates[item.id]?.length > 0) && (
                         <div className="mb-2">
-                          <p className="text-[11px] text-gray-500 mb-1">よく使う指摘内容（タップで入力）</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1">よく使う指摘内容（タップで入力）</p>
                           <div className="flex flex-wrap gap-1.5">
                             {issueTemplates[item.id].map((tpl, ti) => {
                               const selected = st.issue_content === tpl.content
@@ -621,8 +666,8 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
                                   title={tpl.content}
                                   className={`max-w-full text-left text-xs px-2.5 py-1.5 rounded-full border transition truncate ${
                                     selected
-                                      ? 'bg-red-600 border-red-600 text-white'
-                                      : 'bg-white border-red-300 text-red-700 hover:bg-red-100'
+                                      ? 'bg-danger-600 border-danger-600 text-white'
+                                      : 'bg-white dark:bg-ink-700 border-danger-300 dark:border-danger-500/40 text-danger-700 dark:text-danger-400 hover:bg-danger-100 dark:hover:bg-danger-500/20'
                                   }`}
                                 >
                                   {tpl.content.length > 40 ? tpl.content.slice(0, 40) + '…' : tpl.content}
@@ -638,16 +683,16 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
                         onChange={e => handleIssueChange(item.id, 'issue_content', e.target.value)}
                         rows={2}
                         placeholder="指摘内容を入力（過去の指摘から選んで編集も可）"
-                        className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent text-sm"
+                        className="w-full px-3 py-3 rounded-xl border border-danger-300 dark:border-danger-500/40 bg-white dark:bg-ink-700 text-slate-800 dark:text-slate-100 focus:border-danger-500 focus:ring-2 focus:ring-danger-100 dark:focus:ring-danger-500/20 focus:outline-none text-sm transition"
                       />
                     </div>
 
                     {/* 指摘写真（複数枚） */}
                     <div>
-                      <label className="block text-xs font-medium text-red-700 mb-1">指摘写真（複数可）</label>
+                      <label className="block text-xs font-semibold text-danger-700 dark:text-danger-400 mb-1.5">指摘写真（複数可）</label>
                       {st.uploading ? (
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <span className="inline-block w-4 h-4 border-2 border-gray-400 border-t-green-600 rounded-full animate-spin"></span>
+                        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                          <span className="inline-block w-4 h-4 border-2 border-slate-300 border-t-brand-600 rounded-full animate-spin"></span>
                           アップロード中...
                         </div>
                       ) : (
@@ -660,22 +705,22 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
                                   <img
                                     src={url}
                                     alt={`指摘写真 ${idx + 1}`}
-                                    className="w-20 h-20 object-cover rounded border border-gray-300"
+                                    className="w-20 h-20 object-cover rounded-xl border border-slate-200 dark:border-ink-600"
                                   />
                                   <button
                                     type="button"
                                     onClick={() => handlePhotoRemove(item.id, idx)}
-                                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition"
+                                    className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-danger-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-danger-600 transition shadow"
                                   >
-                                    ✕
+                                    <X size={12} strokeWidth={3} />
                                   </button>
                                 </div>
                               ))}
                             </div>
                           )}
                           {/* 追加ボタン */}
-                          <label className="flex items-center gap-2 cursor-pointer w-full px-3 py-2 border border-dashed border-red-300 rounded-lg text-sm text-gray-500 hover:bg-red-50 transition">
-                            <span>📷</span>
+                          <label className="flex items-center gap-2 cursor-pointer w-full px-3 py-2.5 border border-dashed border-danger-300 dark:border-danger-500/40 rounded-xl text-sm text-slate-500 dark:text-slate-400 hover:bg-danger-50 dark:hover:bg-danger-500/10 transition">
+                            <Camera size={16} className="text-danger-500 dark:text-danger-400 flex-shrink-0" />
                             <span>写真を追加...</span>
                             <input
                               type="file"
@@ -691,19 +736,19 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
 
                     {/* 改善期限 */}
                     <div>
-                      <label className="block text-xs font-medium text-red-700 mb-1">
+                      <label className="block text-xs font-semibold text-danger-700 dark:text-danger-400 mb-1.5">
                         改善期限（既定: 点検日+7日）
                       </label>
                       <input
                         type="date"
                         value={st.due_date}
                         onChange={e => handleIssueChange(item.id, 'due_date', e.target.value)}
-                        className="px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent text-sm"
+                        className="px-3 py-2.5 rounded-xl border border-danger-300 dark:border-danger-500/40 bg-white dark:bg-ink-700 text-slate-800 dark:text-slate-100 focus:border-danger-500 focus:ring-2 focus:ring-danger-100 dark:focus:ring-danger-500/20 focus:outline-none text-sm transition"
                       />
                     </div>
                   </div>
                 )}
-              </div>
+              </Card>
             )
           })}
         </div>
@@ -711,32 +756,41 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
 
       {/* 戻る / 次へ */}
       <div className="flex justify-between pt-2">
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="lg"
           onClick={handleBack}
-          className="px-8 py-4 bg-gray-100 text-gray-700 font-semibold text-base rounded-lg hover:bg-gray-200 transition"
+          className="gap-2 h-12"
         >
-          ← 戻る
-        </button>
-        <button
+          <ChevronLeft size={18} />
+          戻る
+        </Button>
+        <Button
           type="button"
+          variant="primary"
+          size="lg"
           onClick={handleNextFromCategory}
-          className="px-8 py-4 bg-green-600 text-white font-semibold text-base rounded-lg hover:bg-green-700 transition"
+          className="gap-2 h-12"
         >
-          次へ →
-        </button>
+          次へ
+          <ChevronRight size={18} />
+        </Button>
       </div>
     </div>
   )
 
   // ---- 最終ステップ: まとめ ----
   const StepSummary = () => (
-    <div className="p-6 space-y-5">
-      <h3 className="text-lg font-bold text-gray-800 border-b pb-2">まとめ</h3>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-ink-700">
+        <Save size={18} className="text-brand-600 dark:text-brand-400 flex-shrink-0" />
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">まとめ</h3>
+      </div>
 
       {/* コメント */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
           コメント（任意）
         </label>
         <textarea
@@ -744,18 +798,18 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
           onChange={e => setComments(e.target.value)}
           rows={3}
           placeholder="全体コメントがあれば入力"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-base"
+          className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-ink-600 bg-white dark:bg-ink-700 text-slate-800 dark:text-slate-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:focus:ring-brand-500/30 focus:outline-none text-base transition"
         />
       </div>
 
       {/* 現場写真（複数枚） */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
           現場写真（複数可）
         </label>
         {sitePhotoUploading ? (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span className="inline-block w-4 h-4 border-2 border-gray-400 border-t-green-600 rounded-full animate-spin"></span>
+          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+            <span className="inline-block w-4 h-4 border-2 border-slate-300 border-t-brand-600 rounded-full animate-spin"></span>
             アップロード中...
           </div>
         ) : (
@@ -767,21 +821,21 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
                     <img
                       src={url}
                       alt={`現場写真 ${idx + 1}`}
-                      className="w-20 h-20 object-cover rounded border border-gray-300"
+                      className="w-20 h-20 object-cover rounded-xl border border-slate-200 dark:border-ink-600"
                     />
                     <button
                       type="button"
                       onClick={() => handleSitePhotoRemove(idx)}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 transition"
+                      className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-danger-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-danger-600 transition shadow"
                     >
-                      ✕
+                      <X size={12} strokeWidth={3} />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-            <label className="flex items-center gap-2 cursor-pointer w-full px-4 py-3 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:bg-gray-50 transition">
-              <span>📷</span>
+            <label className="flex items-center gap-2 cursor-pointer w-full px-4 py-3 border border-dashed border-slate-300 dark:border-ink-600 rounded-xl text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-ink-700 transition">
+              <Camera size={16} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
               <span>現場写真を追加...</span>
               <input
                 type="file"
@@ -797,30 +851,36 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
 
       {/* 戻る / 保存 */}
       <div className="flex justify-between pt-2">
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          size="lg"
           onClick={handleBack}
-          className="px-8 py-4 bg-gray-100 text-gray-700 font-semibold text-base rounded-lg hover:bg-gray-200 transition"
+          className="gap-2 h-12"
         >
-          ← 戻る
-        </button>
-        <button
+          <ChevronLeft size={18} />
+          戻る
+        </Button>
+        <Button
           type="button"
+          variant="primary"
+          size="lg"
           onClick={handleSubmit}
           disabled={submitting}
-          className="px-8 py-4 bg-green-600 text-white font-semibold text-base rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          className="gap-2 h-12"
         >
+          <Save size={18} />
           {submitting ? '保存中...' : (inspection ? '更新する' : '保存する')}
-        </button>
+        </Button>
       </div>
     </div>
   )
 
   return (
-    <div className="bg-white rounded-lg shadow max-w-4xl mx-auto">
+    <div className="bg-white dark:bg-ink-800 rounded-2xl border border-slate-200 dark:border-ink-700 shadow-sm max-w-4xl mx-auto">
       {/* フォームヘッダ */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-green-50 rounded-t-lg">
-        <h2 className="text-xl font-bold text-gray-900">
+      <div className="px-6 py-4 border-b border-slate-200 dark:border-ink-700 bg-brand-50 dark:bg-brand-500/10 rounded-t-2xl">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
           {inspection ? '点検を編集' : '新規点検を記録'}
         </h2>
       </div>

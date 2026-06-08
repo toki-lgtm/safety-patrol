@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import CorrectionPanel from './CorrectionPanel'
+import Card from './ui/Card'
+import Badge from './ui/Badge'
+import { Bell, FileText, Clock, Camera, AlertTriangle } from 'lucide-react'
 
 const getApiUrl = () => {
   const isDev = process.env.NODE_ENV !== 'production'
@@ -85,11 +88,32 @@ function CorrectionList({ projects = [], staff = [], isAdmin = false, myStaffId 
     return []
   }
 
+  // 是正ステータスのBadgeトーン
+  const getCorrectionTone = (status) => {
+    switch (status) {
+      case 'approved': return 'success'
+      case 'submitted': return 'warning'
+      case 'rejected': return 'danger'
+      default: return 'neutral'
+    }
+  }
+
+  const getCorrectionLabel = (status) => {
+    switch (status) {
+      case 'approved': return '是正完了'
+      case 'submitted': return '承認待ち'
+      case 'rejected': return '差し戻し'
+      default: return '是正待ち'
+    }
+  }
+
   if (isLoading) {
     return (
-      <div className="text-center py-12">
-        <div className="text-4xl mb-4">⏳</div>
-        <p className="text-gray-600">読み込み中...</p>
+      <div className="text-center py-16">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-50 dark:bg-brand-500/10 mb-4">
+          <Clock className="w-6 h-6 text-brand-600 dark:text-brand-400 animate-pulse" />
+        </div>
+        <p className="text-slate-500 dark:text-slate-400 text-base">読み込み中...</p>
       </div>
     )
   }
@@ -97,51 +121,66 @@ function CorrectionList({ projects = [], staff = [], isAdmin = false, myStaffId 
   return (
     <div className="space-y-4">
       {/* フィルタ切り替え */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={() => setFilter('urgent')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+          className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold border transition min-h-[44px] ${
             filter === 'urgent'
-              ? 'bg-orange-500 text-white border-orange-500'
-              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+              ? 'bg-accent-500 text-white border-accent-500 shadow-sm'
+              : 'bg-white dark:bg-ink-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-ink-700 hover:bg-slate-50 dark:hover:bg-ink-700'
           }`}
         >
-          🔔 要対応 ({urgentItems.length})
+          <Bell className="w-4 h-4" />
+          要対応
+          <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+            filter === 'urgent' ? 'bg-white/20 text-white' : 'bg-accent-100 dark:bg-accent-500/15 text-accent-700 dark:text-accent-400'
+          }`}>
+            {urgentItems.length}
+          </span>
         </button>
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+          className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold border transition min-h-[44px] ${
             filter === 'all'
-              ? 'bg-green-600 text-white border-green-600'
-              : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+              ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
+              : 'bg-white dark:bg-ink-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-ink-700 hover:bg-slate-50 dark:hover:bg-ink-700'
           }`}
         >
-          📋 すべて ({items.length})
+          <FileText className="w-4 h-4" />
+          すべて
+          <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+            filter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-ink-700 text-slate-600 dark:text-slate-300'
+          }`}>
+            {items.length}
+          </span>
         </button>
       </div>
 
       {/* 0件表示 */}
       {displayItems.length === 0 && (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <div className="text-6xl mb-4">
-            {filter === 'urgent' ? '✅' : '📭'}
+        <Card className="p-12 text-center">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-success-50 dark:bg-success-500/10 mb-4">
+            {filter === 'urgent'
+              ? <Bell className="w-7 h-7 text-success-600 dark:text-success-400" />
+              : <FileText className="w-7 h-7 text-slate-400 dark:text-slate-500" />
+            }
           </div>
-          <p className="text-gray-600 text-lg">
+          <p className="text-slate-600 dark:text-slate-300 text-base font-medium">
             {filter === 'urgent'
               ? '対応が必要な指摘はありません'
               : '指摘項目がありません'}
           </p>
           {filter === 'urgent' && items.length > 0 && (
-            <p className="text-gray-500 text-sm mt-2">
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">
               <button
                 onClick={() => setFilter('all')}
-                className="text-green-600 underline hover:text-green-700"
+                className="text-brand-600 dark:text-brand-400 underline underline-offset-2 hover:text-brand-700 dark:hover:text-brand-300"
               >
                 すべての指摘を見る
               </button>
             </p>
           )}
-        </div>
+        </Card>
       )}
 
       {/* 指摘カード一覧 */}
@@ -149,50 +188,58 @@ function CorrectionList({ projects = [], staff = [], isAdmin = false, myStaffId 
         const insp = item.inspections || {}
         const issueImages = getIssueImageUrls(item)
         const urgent = isUrgent(item)
+        const correctionStatus = item.correction_status || 'pending'
 
         return (
-          <div
+          <Card
             key={item.id}
-            className={`bg-white rounded-lg shadow overflow-hidden border-l-4 ${
-              urgent ? 'border-orange-400' : 'border-gray-200'
+            className={`overflow-hidden border-l-4 ${
+              urgent ? 'border-l-accent-500' : 'border-l-slate-200 dark:border-l-ink-700'
             }`}
           >
             {/* カードヘッダ */}
-            <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center gap-3">
+            <div className="px-5 py-3 bg-slate-50 dark:bg-ink-700/60 border-b border-slate-200 dark:border-ink-700 flex flex-wrap items-center gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="font-semibold text-gray-800">
+                  <span className="font-semibold text-slate-800 dark:text-white">
                     {projectMap[insp.project_id] || insp.project_id || '-'}
                   </span>
-                  <span className="text-gray-400">|</span>
-                  <span className="text-gray-600">{formatDate(insp.inspection_date)}</span>
-                  <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
-                    {item.category}
+                  <span className="text-slate-300 dark:text-slate-600">|</span>
+                  <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                    <Clock className="w-3.5 h-3.5" />
+                    {formatDate(insp.inspection_date)}
                   </span>
+                  <Badge tone="danger">{item.category}</Badge>
                 </div>
-                <div className="flex flex-wrap gap-3 text-xs text-gray-500 mt-1">
+                <div className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
                   <span>検査員: {staffMap[insp.inspector_id] || insp.inspector_id || '-'}</span>
                   <span>作業所長: {staffMap[insp.manager_id] || insp.manager_id || '-'}</span>
                 </div>
               </div>
-              {urgent && (
-                <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-semibold flex-shrink-0">
-                  要対応
-                </span>
-              )}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {urgent && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-accent-100 dark:bg-accent-500/15 text-accent-700 dark:text-accent-400 rounded-full text-xs font-semibold">
+                    <AlertTriangle className="w-3 h-3" />
+                    要対応
+                  </span>
+                )}
+                <Badge tone={getCorrectionTone(correctionStatus)}>
+                  {getCorrectionLabel(correctionStatus)}
+                </Badge>
+              </div>
             </div>
 
-            <div className="p-5 space-y-3">
+            <div className="p-5 space-y-4">
               {/* 指摘内容 */}
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-0.5">点検項目</p>
-                <p className="text-sm text-gray-800">{item.description}</p>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">点検項目</p>
+                <p className="text-sm text-slate-800 dark:text-slate-200">{item.description}</p>
               </div>
 
               {item.issue_content && (
                 <div>
-                  <p className="text-xs font-medium text-red-600 mb-0.5">指摘内容</p>
-                  <p className="text-sm text-gray-800 bg-red-50 border border-red-100 rounded px-3 py-2">
+                  <p className="text-xs font-semibold text-danger-600 dark:text-danger-400 mb-1.5">指摘内容</p>
+                  <p className="text-sm text-slate-800 dark:text-slate-200 bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 rounded-xl px-4 py-2.5">
                     {item.issue_content}
                   </p>
                 </div>
@@ -201,7 +248,10 @@ function CorrectionList({ projects = [], staff = [], isAdmin = false, myStaffId 
               {/* 指摘写真 */}
               {issueImages.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-red-600 mb-1">指摘写真 ({issueImages.length}枚)</p>
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-danger-600 dark:text-danger-400 mb-2">
+                    <Camera className="w-3.5 h-3.5" />
+                    指摘写真 ({issueImages.length}枚)
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {issueImages.map((url, idx) => (
                       <img
@@ -209,7 +259,7 @@ function CorrectionList({ projects = [], staff = [], isAdmin = false, myStaffId 
                         src={url}
                         alt={`指摘写真 ${idx + 1}`}
                         onClick={() => setEnlargedImage(url)}
-                        className="w-20 h-20 object-cover rounded border border-red-200 cursor-pointer hover:opacity-90 transition"
+                        className="w-20 h-20 object-cover rounded-xl bg-slate-100 dark:bg-ink-700 border border-danger-200 dark:border-danger-500/30 cursor-pointer hover:opacity-90 transition"
                         title="クリックで拡大"
                       />
                     ))}
@@ -220,8 +270,11 @@ function CorrectionList({ projects = [], staff = [], isAdmin = false, myStaffId 
               {/* 改善期限 */}
               {item.due_date && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-0.5">改善期限</p>
-                  <p className="text-sm text-gray-800">{formatDate(item.due_date)}</p>
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    改善期限
+                  </p>
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{formatDate(item.due_date)}</p>
                 </div>
               )}
 
@@ -234,27 +287,27 @@ function CorrectionList({ projects = [], staff = [], isAdmin = false, myStaffId 
                 onUpdated={handleUpdated}
               />
             </div>
-          </div>
+          </Card>
         )
       })}
 
       {/* 画像拡大モーダル */}
       {enlargedImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
           onClick={() => setEnlargedImage(null)}
         >
           <div className="relative max-w-3xl w-full mx-4">
             <button
               onClick={() => setEnlargedImage(null)}
-              className="absolute -top-10 right-0 text-white text-2xl font-bold hover:text-gray-300"
+              className="absolute -top-11 right-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 transition"
             >
               ✕
             </button>
             <img
               src={enlargedImage}
               alt="拡大写真"
-              className="w-full h-auto rounded-lg shadow-2xl"
+              className="w-full h-auto rounded-2xl shadow-2xl"
               onClick={e => e.stopPropagation()}
             />
           </div>

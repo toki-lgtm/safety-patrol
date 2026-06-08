@@ -5,6 +5,9 @@ import InspectionList from '../components/InspectionList'
 import InspectionDetail from '../components/InspectionDetail'
 import CorrectionList from '../components/CorrectionList'
 import { generateInspectionPdf } from '../lib/inspectionPdf'
+import Button from '../components/ui/Button'
+import ThemeToggle from '../components/ui/ThemeToggle'
+import { ClipboardCheck, Plus, Wrench, Settings, LogOut } from 'lucide-react'
 
 function DashboardPage({ user, onLogout, onOpenMasters }) {
   const [activeTab, setActiveTab] = useState('list')
@@ -234,95 +237,116 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
 
   const editingInspection = editingId ? inspections.find(i => i.id === editingId) : null
 
+  // タブ定義（ラベル・アイコンのみ。onClick/activeTab ロジックは下の JSX 内で維持）
+  const TABS = [
+    { id: 'list',        label: '点検一覧',  Icon: ClipboardCheck },
+    { id: 'form',        label: '新規点検',  Icon: Plus           },
+    { id: 'corrections', label: '是正対応',  Icon: Wrench         },
+  ]
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* ヘッダー */}
-      <header className="bg-white border-b border-gray-200 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl">🛡️</div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">安全パトロール</h1>
-                <p className="text-sm text-gray-500">月次点検アプリ</p>
+    <div className="min-h-screen bg-slate-100 dark:bg-ink-950">
+
+      {/* ─── スティッキーヘッダー ─── */}
+      <header className="sticky top-0 z-30 bg-white dark:bg-ink-800 border-b border-slate-200 dark:border-ink-700 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+
+            {/* ブランドロゴ */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center shadow-sm">
+                <span className="text-white font-bold text-lg leading-none">中</span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-none hidden sm:block">中原建設</p>
+                <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight truncate">
+                  安全パトロール
+                </h1>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                <p className="text-xs text-gray-500">{user.email}</p>
+
+            {/* 右側コントロール */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              {/* ユーザー情報（中サイズ以上のみ） */}
+              <div className="hidden sm:block text-right">
+                <p className="text-sm font-medium text-slate-900 dark:text-white leading-tight">{user.name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-tight">{user.email}</p>
               </div>
-              <button
+
+              <ThemeToggle />
+
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={onLogout}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                className="h-10 gap-1.5"
               >
-                ログアウト
-              </button>
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">ログアウト</span>
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* タブ */}
-      <div className="bg-white border-b border-gray-200">
+      {/* ─── タブナビゲーション ─── */}
+      <div className="sticky top-14 sm:top-16 z-20 bg-white dark:bg-ink-800 border-b border-slate-200 dark:border-ink-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex gap-8">
-            <button
-              onClick={() => {
-                setActiveTab('list')
-                setEditingId(null)
-                setViewingId(null)
-              }}
-              className={`py-4 px-2 font-medium text-sm border-b-2 transition ${
-                activeTab === 'list'
-                  ? 'border-green-600 text-green-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              📋 点検一覧
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('form')
-                setEditingId(null)
-                setViewingId(null)
-              }}
-              className={`py-4 px-2 font-medium text-sm border-b-2 transition ${
-                activeTab === 'form'
-                  ? 'border-green-600 text-green-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              ➕ 新規点検
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('corrections')
-                setEditingId(null)
-                setViewingId(null)
-              }}
-              className={`py-4 px-2 font-medium text-sm border-b-2 transition ${
-                activeTab === 'corrections'
-                  ? 'border-green-600 text-green-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              🔧 是正対応
-            </button>
+
+          {/* タブ群 */}
+          <div className="flex">
+            {TABS.map(({ id, label, Icon }) => {
+              const isActive = activeTab === id
+              return (
+                <button
+                  key={id}
+                  onClick={() => {
+                    if (id === 'list') {
+                      setActiveTab('list')
+                      setEditingId(null)
+                      setViewingId(null)
+                    } else if (id === 'form') {
+                      setActiveTab('form')
+                      setEditingId(null)
+                      setViewingId(null)
+                    } else {
+                      setActiveTab('corrections')
+                      setEditingId(null)
+                      setViewingId(null)
+                    }
+                  }}
+                  className={`
+                    flex items-center gap-1.5 py-3 px-3 sm:px-5 text-sm font-semibold border-b-2 transition-colors
+                    ${isActive
+                      ? 'border-brand-600 text-brand-600 dark:text-brand-400 dark:border-brand-400'
+                      : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-ink-600'
+                    }
+                  `}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span>{label}</span>
+                </button>
+              )
+            })}
           </div>
+
+          {/* マスター管理ボタン（管理者のみ） */}
           {onOpenMasters && isAdmin && (
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={onOpenMasters}
-              className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+              className="h-9 gap-1.5 flex-shrink-0"
             >
-              ⚙️ マスター管理
-            </button>
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">マスター管理</span>
+            </Button>
           )}
         </div>
       </div>
 
-      {/* コンテンツ */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* ─── メインコンテンツ ─── */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {activeTab === 'corrections' ? (
           <CorrectionList
             projects={projects}

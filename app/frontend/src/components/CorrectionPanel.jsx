@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import axios from 'axios'
+import Button from './ui/Button'
+import Badge from './ui/Badge'
+import { Camera, Check, X, Clock, Image } from 'lucide-react'
 
 // getApiUrl / authHeaders をインライン定義（DashboardPage / InspectionDetail と同一ロジック）
 const getApiUrl = () => {
@@ -14,14 +17,14 @@ const authHeaders = () => ({
 function CorrectionStatusBadge({ status }) {
   switch (status) {
     case 'submitted':
-      return <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">🔵 承認待ち</span>
+      return <Badge tone="warning">承認待ち</Badge>
     case 'approved':
-      return <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">🟢 是正完了</span>
+      return <Badge tone="success">是正完了</Badge>
     case 'rejected':
-      return <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">🔴 差し戻し</span>
+      return <Badge tone="danger">差し戻し</Badge>
     case 'pending':
     default:
-      return <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">🟠 是正待ち</span>
+      return <Badge tone="neutral">是正待ち</Badge>
   }
 }
 
@@ -159,26 +162,29 @@ function CorrectionPanel({ detail, inspection, isAdmin, myStaffId, onUpdated }) 
     : []
 
   return (
-    <div className="mt-4 border border-gray-200 rounded-lg overflow-hidden">
+    <div className="mt-4 border border-slate-200 dark:border-ink-700 rounded-xl overflow-hidden bg-white dark:bg-ink-800">
       {/* ヘッダ: 是正ステータスバッジ */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
-        <span className="text-xs font-semibold text-gray-600">是正対応</span>
+      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-ink-700/60 border-b border-slate-200 dark:border-ink-700">
+        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">是正対応</span>
         <CorrectionStatusBadge status={status} />
       </div>
 
-      <div className="p-4 space-y-3">
-        {/* 差し戻し理由（赤系） */}
+      <div className="p-4 space-y-4">
+        {/* 差し戻し理由（danger系） */}
         {detail.reject_reason && (
-          <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-xs font-semibold text-red-700 mb-0.5">差し戻し理由</p>
-            <p className="text-sm text-red-800">{detail.reject_reason}</p>
+          <div className="px-4 py-3 bg-danger-50 dark:bg-danger-500/10 border border-danger-200 dark:border-danger-500/20 rounded-xl">
+            <p className="text-xs font-semibold text-danger-700 dark:text-danger-400 mb-1">差し戻し理由</p>
+            <p className="text-sm text-danger-800 dark:text-danger-300">{detail.reject_reason}</p>
           </div>
         )}
 
-        {/* 是正写真 */}
+        {/* ビフォーアフター: 是正写真 */}
         {correctionImages.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-gray-600 mb-1">是正写真 ({correctionImages.length}枚)</p>
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">
+              <Image className="w-3.5 h-3.5" />
+              是正写真 ({correctionImages.length}枚)
+            </p>
             <div className="flex flex-wrap gap-2">
               {correctionImages.map((url, idx) => (
                 <img
@@ -186,7 +192,7 @@ function CorrectionPanel({ detail, inspection, isAdmin, myStaffId, onUpdated }) 
                   src={url}
                   alt={`是正写真 ${idx + 1}`}
                   onClick={() => setEnlargedImage(url)}
-                  className="w-20 h-20 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-90 transition"
+                  className="w-20 h-20 object-cover rounded-xl bg-slate-100 dark:bg-ink-700 border border-slate-200 dark:border-ink-700 cursor-pointer hover:opacity-90 transition"
                   title="クリックで拡大"
                 />
               ))}
@@ -197,32 +203,38 @@ function CorrectionPanel({ detail, inspection, isAdmin, myStaffId, onUpdated }) 
         {/* 是正コメント */}
         {detail.correction_comment && (
           <div>
-            <p className="text-xs font-medium text-gray-600 mb-0.5">是正コメント</p>
-            <p className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2">{detail.correction_comment}</p>
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">是正コメント</p>
+            <p className="text-sm text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-ink-700 rounded-xl px-4 py-2.5">{detail.correction_comment}</p>
           </div>
         )}
 
         {/* 日時情報 */}
         {(detail.corrected_at || detail.approved_at) && (
-          <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+          <div className="flex flex-wrap gap-4 text-xs text-slate-500 dark:text-slate-400">
             {detail.corrected_at && (
-              <span>是正提出: {formatDateTime(detail.corrected_at)}</span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                是正提出: {formatDateTime(detail.corrected_at)}
+              </span>
             )}
             {detail.approved_at && (
-              <span>承認: {formatDateTime(detail.approved_at)}</span>
+              <span className="flex items-center gap-1">
+                <Check className="w-3 h-3" />
+                承認: {formatDateTime(detail.approved_at)}
+              </span>
             )}
           </div>
         )}
 
         {/* 是正提出フォーム（作業所長・権限あり・pending/rejected のとき） */}
         {canSubmit && (
-          <div className="space-y-3 pt-2 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-700">是正内容を提出する</p>
+          <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-ink-700">
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">是正内容を提出する</p>
 
             {/* ファイル選択 */}
             <div>
-              <label className="flex items-center gap-2 cursor-pointer w-full px-3 py-2 border border-dashed border-green-300 rounded-lg text-sm text-gray-500 hover:bg-green-50 transition">
-                <span>📷</span>
+              <label className="flex items-center gap-2 cursor-pointer w-full px-4 py-3 border-2 border-dashed border-accent-300 dark:border-accent-500/40 rounded-xl text-sm text-slate-500 dark:text-slate-400 hover:bg-accent-50 dark:hover:bg-accent-500/5 transition min-h-[44px]">
+                <Camera className="w-4 h-4 text-accent-500 dark:text-accent-400 flex-shrink-0" />
                 <span>
                   {files.length > 0
                     ? `${files.length}枚選択済み`
@@ -238,9 +250,9 @@ function CorrectionPanel({ detail, inspection, isAdmin, myStaffId, onUpdated }) 
                 />
               </label>
               {files.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-1">
+                <div className="flex flex-wrap gap-1 mt-2">
                   {Array.from(files).map((f, i) => (
-                    <span key={i} className="text-xs px-2 py-0.5 bg-green-50 border border-green-200 text-green-700 rounded">
+                    <span key={i} className="text-xs px-2 py-1 bg-accent-50 dark:bg-accent-500/10 border border-accent-200 dark:border-accent-500/20 text-accent-700 dark:text-accent-400 rounded-lg">
                       {f.name}
                     </span>
                   ))}
@@ -255,47 +267,57 @@ function CorrectionPanel({ detail, inspection, isAdmin, myStaffId, onUpdated }) 
               rows={2}
               placeholder="是正コメント（任意）"
               disabled={busy}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm disabled:bg-gray-50"
+              className="w-full px-4 py-2.5 border border-slate-300 dark:border-ink-600 rounded-xl bg-white dark:bg-ink-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-accent-400 focus:border-transparent text-sm disabled:opacity-50 min-h-[44px]"
             />
 
             {/* 提出ボタン */}
-            <button
+            <Button
               type="button"
+              variant="accent"
+              size="md"
               onClick={handleSubmitCorrection}
               disabled={busy}
-              className="px-5 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-wait transition"
             >
               {busy ? (
-                <span className="flex items-center gap-2">
-                  <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <>
+                  <span className="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   送信中...
-                </span>
-              ) : '是正を提出'}
-            </button>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  是正を提出
+                </>
+              )}
+            </Button>
           </div>
         )}
 
         {/* 承認・差し戻しフォーム（検査官・権限あり・submitted のとき） */}
         {canReview && (
-          <div className="space-y-3 pt-2 border-t border-gray-100">
-            <p className="text-xs font-semibold text-gray-700">是正内容を確認する</p>
+          <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-ink-700">
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">是正内容を確認する</p>
             <div className="flex flex-wrap gap-2">
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="md"
                 onClick={handleApprove}
                 disabled={busy}
-                className="px-5 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-wait transition"
               >
-                {busy ? '処理中...' : '✓ 承認'}
-              </button>
-              <button
+                <Check className="w-4 h-4" />
+                {busy ? '処理中...' : '承認'}
+              </Button>
+              <Button
                 type="button"
+                variant="danger"
+                size="md"
                 onClick={() => setShowRejectForm(v => !v)}
                 disabled={busy}
-                className="px-5 py-2.5 bg-red-50 text-red-700 border border-red-300 text-sm font-semibold rounded-lg hover:bg-red-100 disabled:opacity-50 transition"
               >
-                ✕ 差し戻し
-              </button>
+                <X className="w-4 h-4" />
+                差し戻し
+              </Button>
             </div>
 
             {/* 差し戻し理由入力 */}
@@ -307,16 +329,18 @@ function CorrectionPanel({ detail, inspection, isAdmin, myStaffId, onUpdated }) 
                   rows={2}
                   placeholder="差し戻し理由を入力してください"
                   disabled={busy}
-                  className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent text-sm disabled:bg-gray-50"
+                  className="w-full px-4 py-2.5 border border-danger-300 dark:border-danger-500/40 rounded-xl bg-white dark:bg-ink-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-danger-400 focus:border-transparent text-sm disabled:opacity-50 min-h-[44px]"
                 />
-                <button
+                <Button
                   type="button"
+                  variant="danger"
+                  size="md"
                   onClick={handleReject}
                   disabled={busy || !rejectInput.trim()}
-                  className="px-5 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="bg-danger-600 dark:bg-danger-600 text-white hover:bg-danger-700 dark:hover:bg-danger-700"
                 >
                   {busy ? '処理中...' : '差し戻しを確定'}
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -326,20 +350,20 @@ function CorrectionPanel({ detail, inspection, isAdmin, myStaffId, onUpdated }) 
       {/* 画像拡大モーダル */}
       {enlargedImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
           onClick={() => setEnlargedImage(null)}
         >
           <div className="relative max-w-3xl w-full mx-4">
             <button
               onClick={() => setEnlargedImage(null)}
-              className="absolute -top-10 right-0 text-white text-2xl font-bold hover:text-gray-300"
+              className="absolute -top-11 right-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 transition"
             >
               ✕
             </button>
             <img
               src={enlargedImage}
               alt="拡大写真"
-              className="w-full h-auto rounded-lg shadow-2xl"
+              className="w-full h-auto rounded-2xl shadow-2xl"
               onClick={e => e.stopPropagation()}
             />
           </div>

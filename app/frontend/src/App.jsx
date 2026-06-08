@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
+import { ArrowLeft, LogOut, ShieldCheck } from 'lucide-react'
 import DashboardPage from './pages/DashboardPage'
 import MastersPage from './pages/MastersPage'
+import Button from './components/ui/Button'
+import ThemeToggle from './components/ui/ThemeToggle'
 
 function App() {
   const [user, setUser] = useState(null)
@@ -55,10 +58,10 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-100 dark:bg-ink-950 flex items-center justify-center transition-colors">
         <div className="text-center">
-          <div className="mb-4 text-4xl">⏳</div>
-          <p className="text-slate-600">読み込み中...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-brand-600 mb-4"></div>
+          <p className="text-slate-500 dark:text-slate-400">読み込み中...</p>
         </div>
       </div>
     )
@@ -66,19 +69,22 @@ function App() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-          <div className="mb-6">
-            <div className="text-6xl mb-4">🛡️</div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">安全パトロール</h1>
-            <p className="text-slate-500">月次点検アプリ</p>
+      <div className="min-h-screen bg-slate-100 dark:bg-ink-950 flex items-center justify-center px-4 transition-colors">
+        <div className="fixed top-5 right-5">
+          <ThemeToggle />
+        </div>
+        <div className="max-w-md w-full bg-white dark:bg-ink-800 rounded-2xl shadow-xl border border-slate-200 dark:border-ink-700 p-8 text-center">
+          <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-brand-600 flex items-center justify-center">
+            <ShieldCheck className="w-7 h-7 text-white" />
           </div>
-          <p className="text-slate-600 mb-6">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-1">安全パトロール</h1>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">月次点検アプリ ・ 中原建設</p>
+          <p className="text-slate-600 dark:text-slate-300 mb-6">
             社内ポータルでログインしてください
           </p>
           <a
             href="https://portal-app-beryl.vercel.app"
-            className="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition"
+            className="inline-flex w-full items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 px-4 rounded-xl transition"
           >
             ポータルに戻る
           </a>
@@ -89,20 +95,15 @@ function App() {
 
   if (currentPage === 'masters') {
     return (
-      <div>
-        <div className="fixed top-0 right-0 p-4 space-x-2">
-          <button
-            onClick={() => setCurrentPage('dashboard')}
-            className="px-4 py-2 bg-gray-600 text-white rounded"
-          >
-            ← 戻る
-          </button>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-600 text-white rounded"
-          >
-            ログアウト
-          </button>
+      <div className="min-h-screen bg-slate-100 dark:bg-ink-950 transition-colors">
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setCurrentPage('dashboard')}>
+            <ArrowLeft className="w-4 h-4" /> 戻る
+          </Button>
+          <ThemeToggle />
+          <Button variant="danger" size="sm" onClick={handleLogout}>
+            <LogOut className="w-4 h-4" /> ログアウト
+          </Button>
         </div>
         <MastersPage />
       </div>
