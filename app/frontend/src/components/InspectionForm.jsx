@@ -36,6 +36,7 @@ function InspectionForm({ inspection, onSubmit }) {
   const [projects, setProjects] = useState([])
   const [inspectionItems, setInspectionItems] = useState([]) // { id, category, description }
   const [allCategories, setAllCategories] = useState([]) // 重複排除カテゴリ一覧
+  const [issueTemplates, setIssueTemplates] = useState({}) // { [item_id]: [{ content, use_count }] } 過去の指摘内容
 
   // 各 item_id に対する評価状態
   // { [item_id]: { result: '良'|'指摘あり', issue_content: '', issue_image_urls: [], due_date: '', uploading: false } }
@@ -54,14 +55,25 @@ function InspectionForm({ inspection, onSubmit }) {
     const fetchAll = async () => {
       try {
         setMasterLoading(true)
-        const [staffRes, projectsRes, itemsRes] = await Promise.all([
+        const [staffRes, projectsRes, itemsRes, templatesRes] = await Promise.all([
           axios.get(`${getApiUrl()}/api/masters/staff`, { headers: authHeaders() }),
           axios.get(`${getApiUrl()}/api/masters/projects`, { headers: authHeaders() }),
           axios.get(`${getApiUrl()}/api/masters/inspection-items`, { headers: authHeaders() }),
+          // 過去の指摘内容テンプレート（取得失敗しても点検入力は続行できるよう握りつぶす）
+          axios.get(`${getApiUrl()}/api/issue-templates`, { headers: authHeaders() }).catch(() => ({ data: [] })),
         ])
         setStaff(staffRes.data)
         setProjects(projectsRes.data)
         setInspectionItems(itemsRes.data)
+
+        // 指摘内容テンプレートを item_id 別にグルーピング（use_count 降順は API 側で済み）
+        const tplByItem = {}
+        for (const t of (templatesRes.data || [])) {
+          if (!t.item_id) continue
+          if (!tplByItem[t.item_id]) tplByItem[t.item_id] = []
+          tplByItem[t.item_id].push({ content: t.content, use_count: t.use_count })
+        }
+        setIssueTemplates(tplByItem)
 
         // カテゴリ一覧（重複排除・順序維持）
         const cats = [...new Set(itemsRes.data.map(item => item.category))]
@@ -580,11 +592,39 @@ function InspectionForm({ inspection, onSubmit }) {
                       <label className="block text-xs font-medium text-red-700 mb-1">
                         指摘内容 <span className="text-red-500">*</span>
                       </label>
+
+                      {/* 過去の指摘内容から選択（同じ項目で過去に入力したもの）。クリックで下の入力欄に反映 */}
+                      {(issueTemplates[item.id]?.length > 0) && (
+                        <div className="mb-2">
+                          <p className="text-[11px] text-gray-500 mb-1">よく使う指摘内容（タップで入力）</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {issueTemplates[item.id].map((tpl, ti) => {
+                              const selected = st.issue_content === tpl.content
+                              return (
+                                <button
+                                  key={ti}
+                                  type="button"
+                                  onClick={() => handleIssueChange(item.id, 'issue_content', tpl.content)}
+                                  title={tpl.content}
+                                  className={`max-w-full text-left text-xs px-2.5 py-1.5 rounded-full border transition truncate ${
+                                    selected
+                                      ? 'bg-red-600 border-red-600 text-white'
+                                      : 'bg-white border-red-300 text-red-700 hover:bg-red-100'
+                                  }`}
+                                >
+                                  {tpl.content.length > 40 ? tpl.content.slice(0, 40) + '…' : tpl.content}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       <textarea
                         value={st.issue_content}
                         onChange={e => handleIssueChange(item.id, 'issue_content', e.target.value)}
                         rows={2}
-                        placeholder="指摘内容を入力してください"
+                        placeholder="指摘内容を入力（過去の指摘から選んで編集も可）"
                         className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-400 focus:border-transparent text-sm"
                       />
                     </div>

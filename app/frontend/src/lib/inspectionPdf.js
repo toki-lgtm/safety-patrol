@@ -37,10 +37,25 @@ const toDataUrl = async (url) => {
   }
 }
 
-const imgTag = (dataUrl) =>
-  dataUrl
-    ? `<img src="${dataUrl}" style="width:120px;height:120px;object-fit:cover;border:1px solid #d1d5db;border-radius:4px;margin:0 6px 6px 0;" />`
-    : `<span style="display:inline-block;width:120px;height:120px;line-height:120px;text-align:center;color:#9ca3af;border:1px dashed #d1d5db;border-radius:4px;margin:0 6px 6px 0;font-size:11px;">画像読込失敗</span>`
+// 写真を「2枚以上は横並び」で大きく表示するグリッド。
+// 1枚: 大きく1枚 / 2枚以上: 2カラムで横に並べる（視認性優先で従来より大判）。
+const photoGrid = (urls, urlToData) => {
+  if (!urls || urls.length === 0) return ''
+  const single = urls.length === 1
+  // 1枚は幅広・高め、複数枚は2カラム（各 calc(50% - 5px)）で横並び
+  const cellW = single ? 'width:60%;' : 'width:calc(50% - 5px);'
+  const cellH = single ? 'height:260px;' : 'height:230px;'
+  const cells = urls
+    .map((u) => {
+      const dataUrl = urlToData[u]
+      const inner = dataUrl
+        ? `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;display:block;" />`
+        : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#9ca3af;font-size:12px;">画像読込失敗</span>`
+      return `<div style="${cellW}${cellH}border:1px solid #d1d5db;border-radius:6px;overflow:hidden;background:#f3f4f6;box-sizing:border-box;">${inner}</div>`
+    })
+    .join('')
+  return `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">${cells}</div>`
+}
 
 /**
  * 点検レポートのPDFを生成し、Blob とファイル名を返す（保存はしない）。
@@ -85,11 +100,10 @@ export async function generateInspectionPdf(inspection, { projectMap = {}, staff
         .map((item) => {
           const isIssue = item.result === '指摘あり'
           const urls = getIssueImageUrls(item)
-          const photos = urls.map((u) => imgTag(urlToData[u])).join('')
           const issueBlock = isIssue
             ? `
               ${item.issue_content ? `<div style="margin-top:6px;"><span style="color:#dc2626;font-size:11px;font-weight:600;">指摘内容</span><div style="font-size:12px;color:#1f2937;background:#fef2f2;border:1px solid #fecaca;border-radius:4px;padding:6px 8px;margin-top:2px;">${esc(item.issue_content)}</div></div>` : ''}
-              ${urls.length ? `<div style="margin-top:6px;"><span style="color:#dc2626;font-size:11px;font-weight:600;">指摘写真 (${urls.length}枚)</span><div style="margin-top:4px;">${photos}</div></div>` : ''}
+              ${urls.length ? `<div style="margin-top:6px;"><span style="color:#dc2626;font-size:11px;font-weight:600;">指摘写真 (${urls.length}枚)</span>${photoGrid(urls, urlToData)}</div>` : ''}
               ${item.due_date ? `<div style="margin-top:6px;"><span style="color:#dc2626;font-size:11px;font-weight:600;">改善期限</span> <span style="font-size:12px;color:#1f2937;">${formatDate(item.due_date)}</span></div>` : ''}
             `
             : ''
@@ -112,7 +126,7 @@ export async function generateInspectionPdf(inspection, { projectMap = {}, staff
     .join('')
 
   const sitePhotoHtml = sitePhotos.length
-    ? `<div style="margin-top:14px;"><div style="font-size:11px;color:#6b7280;margin-bottom:4px;">現場写真</div><div>${sitePhotos.map((u) => imgTag(urlToData[u])).join('')}</div></div>`
+    ? `<div style="margin-top:14px;"><div style="font-size:11px;color:#6b7280;margin-bottom:4px;">現場写真</div>${photoGrid(sitePhotos, urlToData)}</div>`
     : ''
 
   const categoriesHtml =
