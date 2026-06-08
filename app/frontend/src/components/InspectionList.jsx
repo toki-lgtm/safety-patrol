@@ -3,7 +3,9 @@ const hasStoredPdf = (insp) => typeof insp.report_url === 'string' && insp.repor
 // 'archived:' で始まれば共有ドライブへアーカイブ済み（写真・PDFはクラウドから削除済み）
 const isArchived = (insp) => typeof insp.report_url === 'string' && insp.report_url.startsWith('archived:')
 
-function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGeneratePdf, onViewPdf, pdfBusyId, projects = [], staff = [] }) {
+function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGeneratePdf, onViewPdf, pdfBusyId, projects = [], staff = [], isAdmin = false, myStaffId = null }) {
+  // 編集/PDF発行は管理者は全件、メンバーは自分が検査官の案件のみ
+  const canManage = (insp) => isAdmin || (!!myStaffId && insp.inspector_id === myStaffId)
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
   const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
   const getStatusColor = (status) => {
@@ -121,21 +123,23 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
                       >
                         詳細
                       </button>
-                      {inspection.report_url ? (
-                        <button
-                          disabled
-                          title="PDF生成済みのため編集できません"
-                          className="px-3 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded cursor-not-allowed"
-                        >
-                          🔒 編集
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => onEdit(inspection.id)}
-                          className="px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-300 rounded hover:bg-blue-50 transition"
-                        >
-                          編集
-                        </button>
+                      {canManage(inspection) && (
+                        inspection.report_url ? (
+                          <button
+                            disabled
+                            title="PDF生成済みのため編集できません"
+                            className="px-3 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 rounded cursor-not-allowed"
+                          >
+                            🔒 編集
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => onEdit(inspection.id)}
+                            className="px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-300 rounded hover:bg-blue-50 transition"
+                          >
+                            編集
+                          </button>
+                        )
                       )}
                       {isArchived(inspection) ? (
                         <span
@@ -151,7 +155,7 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
                         >
                           📄 PDF表示
                         </button>
-                      ) : (
+                      ) : canManage(inspection) ? (
                         <button
                           onClick={() => onGeneratePdf && onGeneratePdf(inspection.id)}
                           disabled={pdfBusyId === inspection.id}
@@ -159,13 +163,15 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
                         >
                           {pdfBusyId === inspection.id ? '生成中…' : '📄 PDF生成'}
                         </button>
+                      ) : null}
+                      {isAdmin && (
+                        <button
+                          onClick={() => onDelete(inspection.id)}
+                          className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 transition"
+                        >
+                          削除
+                        </button>
                       )}
-                      <button
-                        onClick={() => onDelete(inspection.id)}
-                        className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 transition"
-                      >
-                        削除
-                      </button>
                     </div>
                   </td>
                 </tr>

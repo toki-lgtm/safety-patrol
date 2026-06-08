@@ -195,6 +195,18 @@ function MastersPage() {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
+              <p className="mt-1 text-xs text-gray-500">ログイン中のGoogleアカウントと一致させると本人の点検が紐づきます</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">権限</label>
+              <select
+                value={formData.app_role || 'member'}
+                onChange={(e) => setFormData({ ...formData, app_role: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="member">メンバー（一覧閲覧・新規点検）</option>
+                <option value="admin">管理者（全機能）</option>
+              </select>
             </div>
           </div>
           <div className="flex gap-2">
@@ -224,6 +236,7 @@ function MastersPage() {
             <tr>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">氏名</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">メールアドレス</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">権限</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">操作</th>
             </tr>
           </thead>
@@ -232,6 +245,13 @@ function MastersPage() {
               <tr key={s.id} className="hover:bg-gray-50 transition">
                 <td className="px-6 py-4 text-sm text-gray-600">{s.name}</td>
                 <td className="px-6 py-4 text-sm text-gray-600">{s.email}</td>
+                <td className="px-6 py-4 text-sm">
+                  {s.app_role === 'admin' ? (
+                    <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-medium">管理者</span>
+                  ) : (
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">メンバー</span>
+                  )}
+                </td>
                 <td className="px-6 py-4 text-sm space-x-2">
                   <button
                     onClick={() => handleEdit(s)}

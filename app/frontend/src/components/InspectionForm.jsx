@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-function InspectionForm({ inspection, onSubmit }) {
+function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = null }) {
+  // メンバーは検査員を自分に固定（管理者は自由選択）
+  const lockInspector = !isAdmin && !!myStaffId
   const getApiUrl = () => {
     const isDev = process.env.NODE_ENV !== 'production'
     return isDev ? 'http://localhost:3000' : 'https://portal-api-hhlx.onrender.com'
@@ -99,6 +101,13 @@ function InspectionForm({ inspection, onSubmit }) {
     }
     fetchAll()
   }, [])
+
+  // メンバーの新規点検は検査員を自分に固定
+  useEffect(() => {
+    if (lockInspector && !inspection) {
+      setHeader(prev => ({ ...prev, inspector_id: myStaffId }))
+    }
+  }, [lockInspector, myStaffId, inspection])
 
   // 編集時のデータ反映
   useEffect(() => {
@@ -454,13 +463,17 @@ function InspectionForm({ inspection, onSubmit }) {
             name="inspector_id"
             value={header.inspector_id}
             onChange={handleHeaderChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-base bg-white"
+            disabled={lockInspector}
+            className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-base ${lockInspector ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : 'bg-white'}`}
           >
             <option value="">選択してください</option>
             {staff.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
+          {lockInspector && (
+            <p className="mt-1 text-xs text-gray-500">あなたが検査員として記録されます（変更不可）</p>
+          )}
         </div>
 
         <div>

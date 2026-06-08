@@ -14,6 +14,11 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
   const [editingId, setEditingId] = useState(null)
   const [viewingId, setViewingId] = useState(null)
   const [pdfBusyId, setPdfBusyId] = useState(null)
+  // 権限: role='admin'(全機能) / 'member'(閲覧・新規点検), staffId=本人のスタッフID
+  const [perms, setPerms] = useState({ role: 'member', staffId: null })
+  const isAdmin = perms.role === 'admin'
+  // 編集/PDF発行できるか（管理者は全件、メンバーは自分が検査官の案件のみ）
+  const canEditInspection = (insp) => isAdmin || (!!perms.staffId && insp?.inspector_id === perms.staffId)
 
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
   const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
@@ -30,7 +35,18 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
   useEffect(() => {
     fetchInspections()
     fetchMasters()
+    fetchPermissions()
   }, [])
+
+  const fetchPermissions = async () => {
+    try {
+      const res = await axios.get(`${getApiUrl()}/api/my-permissions`, { headers: authHeaders() })
+      setPerms({ role: res.data.role, staffId: res.data.staff_id })
+    } catch (error) {
+      console.error('権限取得に失敗:', error)
+      setPerms({ role: 'member', staffId: null }) // 取得失敗時は最小権限
+    }
+  }
 
   const fetchMasters = async () => {
     try {
@@ -91,7 +107,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
       alert('点検を更新しました')
     } catch (error) {
       console.error('Failed to update inspection:', error)
-      alert('更新に失敗しました')
+      alert(error.response?.data?.error || '更新に失敗しました')
     }
   }
 
@@ -107,7 +123,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
       alert('削除しました')
     } catch (error) {
       console.error('Failed to delete inspection:', error)
-      alert('削除に失敗しました')
+      alert(error.response?.data?.error || '削除に失敗しました')
     }
   }
 
@@ -121,6 +137,10 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
 
   const handleEditInspection = (id) => {
     const target = inspections.find(i => i.id === id)
+    if (target && !canEditInspection(target)) {
+      alert('自分が検査した案件のみ編集できます')
+      return
+    }
     if (target && target.report_url) {
       alert('この点検はPDF生成済みのため編集できません')
       return
@@ -158,7 +178,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
       alert('PDFを生成・保存しました。「PDF表示」からいつでも閲覧できます。この点検は編集できなくなります。')
     } catch (error) {
       console.error('PDF生成に失敗:', error)
-      alert('PDF生成に失敗しました')
+      alert(error.response?.data?.error || 'PDF生成に失敗しました')
     } finally {
       setPdfBusyId(null)
     }
@@ -245,7 +265,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
               ➕ 新規点検
             </button>
           </div>
-          {onOpenMasters && (
+          {onOpenMasters && isAdmin && (
             <button
               onClick={onOpenMasters}
               className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
@@ -268,6 +288,8 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
               onViewPdf={handleViewPdf}
               projects={projects}
               staff={staff}
+              isAdmin={isAdmin}
+              myStaffId={perms.staffId}
             />
           ) : (
             <InspectionList
@@ -281,11 +303,15 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
               pdfBusyId={pdfBusyId}
               projects={projects}
               staff={staff}
+              isAdmin={isAdmin}
+              myStaffId={perms.staffId}
             />
           )
         ) : (
           <InspectionForm
             inspection={editingInspection}
+            isAdmin={isAdmin}
+            myStaffId={perms.staffId}
             onSubmit={(data) => {
               if (editingInspection) {
                 handleUpdateInspection(editingInspection.id, data)

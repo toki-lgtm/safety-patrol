@@ -6,7 +6,7 @@ const hasStoredPdf = (insp) => !!insp && typeof insp.report_url === 'string' && 
 // 'archived:' で始まれば共有ドライブへアーカイブ済み（写真・PDFはクラウドから削除済み）
 const isArchived = (insp) => !!insp && typeof insp.report_url === 'string' && insp.report_url.startsWith('archived:')
 
-function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewPdf, projects = [], staff = [] }) {
+function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewPdf, projects = [], staff = [], isAdmin = false, myStaffId = null }) {
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
   const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
   const getApiUrl = () => {
@@ -124,6 +124,8 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
 
   const issueCount = details.filter(d => d.result === '指摘あり').length
   const sitePhotos = Array.isArray(inspection.site_photo_urls) ? inspection.site_photo_urls : []
+  // 編集/PDF発行は管理者は全件、メンバーは自分が検査官の案件のみ
+  const canManage = isAdmin || (!!myStaffId && inspection.inspector_id === myStaffId)
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -136,21 +138,23 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
           ← 一覧に戻る
         </button>
         <div className="flex flex-wrap gap-2">
-          {inspection.report_url ? (
-            <button
-              disabled
-              title="PDF生成済みのため編集できません"
-              className="px-5 py-2.5 rounded-lg font-medium text-gray-400 bg-gray-100 cursor-not-allowed"
-            >
-              🔒 編集
-            </button>
-          ) : (
-            <button
-              onClick={() => onEdit && onEdit(inspection.id)}
-              className="px-5 py-2.5 rounded-lg font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition"
-            >
-              ✏️ 編集
-            </button>
+          {canManage && (
+            inspection.report_url ? (
+              <button
+                disabled
+                title="PDF生成済みのため編集できません"
+                className="px-5 py-2.5 rounded-lg font-medium text-gray-400 bg-gray-100 cursor-not-allowed"
+              >
+                🔒 編集
+              </button>
+            ) : (
+              <button
+                onClick={() => onEdit && onEdit(inspection.id)}
+                className="px-5 py-2.5 rounded-lg font-medium text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition"
+              >
+                ✏️ 編集
+              </button>
+            )
           )}
           {isArchived(inspection) ? (
             <span
@@ -166,7 +170,7 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
             >
               📄 PDF表示
             </button>
-          ) : (
+          ) : canManage ? (
             <button
               onClick={handleGeneratePdf}
               disabled={pdfBusy}
@@ -174,7 +178,7 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
             >
               {pdfBusy ? '生成中…' : '📄 PDF生成'}
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 
