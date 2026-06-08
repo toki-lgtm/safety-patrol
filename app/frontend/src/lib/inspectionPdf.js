@@ -153,7 +153,7 @@ export async function generateInspectionPdf(inspection, { projectMap = {}, staff
   const sitePhotoBlock = sitePhotos.length
     ? `<div class="pdf-block" style="padding-top:12px;">
          <div style="font-size:11px;color:#6b7280;margin-bottom:5px;">現場写真</div>
-         ${photoGrid(sitePhotos, urlToData, { columns: 3 })}
+         ${photoGrid(sitePhotos, urlToData, { columns: 4 })}
        </div>`
     : ''
 
@@ -197,7 +197,7 @@ export async function generateInspectionPdf(inspection, { projectMap = {}, staff
           const photos = urls.length
             ? `<div style="margin-top:7px;">
                  <span style="color:#dc2626;font-size:10px;font-weight:700;">指摘写真（${urls.length}枚）</span>
-                 <div style="margin-top:3px;">${photoGrid(urls, urlToData, { columns: 2, caption: '写真' })}</div>
+                 <div style="margin-top:3px;">${photoGrid(urls, urlToData, { columns: 3, caption: '写真' })}</div>
                </div>`
             : ''
           const due = item.due_date
