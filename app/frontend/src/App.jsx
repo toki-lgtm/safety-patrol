@@ -8,9 +8,15 @@ function App() {
   const [currentPage, setCurrentPage] = useState('dashboard')
 
   useEffect(() => {
-    // URL パラメータからユーザー情報を取得
+    // URL パラメータからユーザー情報とトークンを取得
     const params = new URLSearchParams(window.location.search)
     const userParam = params.get('user')
+    const tokenParam = params.get('token')
+
+    // ✅ ポータル発行のJWTを保存（API認可に使用）
+    if (tokenParam) {
+      localStorage.setItem('authToken', tokenParam)
+    }
 
     if (userParam) {
       try {
@@ -30,6 +36,11 @@ function App() {
           console.error('Failed to parse user from localStorage:', e)
         }
       }
+    }
+
+    // ✅ URLからtoken/userを除去（履歴・Referer経由の漏洩を防ぐ）
+    if (tokenParam || userParam) {
+      window.history.replaceState({}, '', window.location.pathname)
     }
     setIsLoading(false)
   }, [])
