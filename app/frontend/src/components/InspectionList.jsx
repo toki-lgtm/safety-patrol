@@ -1,10 +1,12 @@
-function InspectionList({ inspections, isLoading, onEdit, onDelete }) {
+function InspectionList({ inspections, isLoading, onEdit, onDelete, onView }) {
   const getStatusColor = (status) => {
     switch (status) {
       case 'approved':
         return 'bg-green-100 text-green-800'
       case 'rejected':
         return 'bg-red-100 text-red-800'
+      case 'completed':
+        return 'bg-blue-100 text-blue-800'
       case 'pending':
       default:
         return 'bg-yellow-100 text-yellow-800'
@@ -17,9 +19,20 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete }) {
         return '✓ 承認済み'
       case 'rejected':
         return '✗ 要修正'
+      case 'completed':
+        return '✔ 完了'
       case 'pending':
       default:
         return '⏳ 未確認'
+    }
+  }
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-'
+    try {
+      return new Date(dateStr).toLocaleDateString('ja-JP')
+    } catch {
+      return dateStr
     }
   }
 
@@ -49,56 +62,79 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete }) {
         <table className="w-full">
           <thead className="bg-gray-100 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">点検ID</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">日付</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">現場</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">検査員</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">対象区分</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">ステータス</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-900">操作</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">点検ID</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">日付</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">現場</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">検査員</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">指摘カテゴリ</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">ステータス</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-900">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {inspections.map((inspection) => (
-              <tr key={inspection.id} className="hover:bg-gray-50 transition">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                  {inspection.inspectionId}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  {new Date(inspection.date).toLocaleDateString('ja-JP')}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  {inspection.projectId || '-'}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  {inspection.inspectorId || '-'}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  {Array.isArray(inspection.categories) ? inspection.categories.join(', ') : '-'}
-                </td>
-                <td className="px-6 py-4 text-sm">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(inspection.status)}`}>
-                    {getStatusLabel(inspection.status)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onEdit(inspection.id)}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      編集
-                    </button>
-                    <button
-                      onClick={() => onDelete(inspection.id)}
-                      className="text-red-600 hover:text-red-800 font-medium"
-                    >
-                      削除
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {inspections.map((inspection) => {
+              const hasIssues = Array.isArray(inspection.categories) && inspection.categories.length > 0
+              return (
+                <tr
+                  key={inspection.id}
+                  className="hover:bg-gray-50 transition cursor-pointer"
+                  onClick={() => onView && onView(inspection.id)}
+                >
+                  <td className="px-4 py-4 text-sm font-medium text-gray-900">
+                    {inspection.inspection_id || '-'}
+                  </td>
+                  <td className="px-4 py-4 text-sm text-gray-600">
+                    {formatDate(inspection.inspection_date)}
+                  </td>
+                  <td className="px-4 py-4 text-sm text-gray-600">
+                    {inspection.project_id || '-'}
+                  </td>
+                  <td className="px-4 py-4 text-sm text-gray-600">
+                    {inspection.inspector_id || '-'}
+                  </td>
+                  <td className="px-4 py-4 text-sm">
+                    {hasIssues ? (
+                      <div className="flex flex-wrap gap-1">
+                        {inspection.categories.map(cat => (
+                          <span key={cat} className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-green-600 text-xs font-medium">指摘なし</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-4 text-sm">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(inspection.status)}`}>
+                      {getStatusLabel(inspection.status)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-sm" onClick={e => e.stopPropagation()}>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => onView && onView(inspection.id)}
+                        className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 transition"
+                      >
+                        詳細
+                      </button>
+                      <button
+                        onClick={() => onEdit(inspection.id)}
+                        className="px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-300 rounded hover:bg-blue-50 transition"
+                      >
+                        編集
+                      </button>
+                      <button
+                        onClick={() => onDelete(inspection.id)}
+                        className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50 transition"
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

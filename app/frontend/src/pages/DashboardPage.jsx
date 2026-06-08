@@ -2,17 +2,23 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import InspectionForm from '../components/InspectionForm'
 import InspectionList from '../components/InspectionList'
+import InspectionDetail from '../components/InspectionDetail'
 
 function DashboardPage({ user, onLogout, onOpenMasters }) {
   const [activeTab, setActiveTab] = useState('list')
   const [inspections, setInspections] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [editingId, setEditingId] = useState(null)
+  const [viewingId, setViewingId] = useState(null)
 
   const getApiUrl = () => {
     const isDev = process.env.NODE_ENV !== 'production'
     return isDev ? 'http://localhost:3000' : 'https://portal-api-hhlx.onrender.com'
   }
+
+  const authHeaders = () => ({
+    Authorization: `Bearer ${localStorage.getItem('authToken')}`
+  })
 
   useEffect(() => {
     fetchInspections()
@@ -23,11 +29,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
       setIsLoading(true)
       const response = await axios.get(
         `${getApiUrl()}/api/inspections`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
-          }
-        }
+        { headers: authHeaders() }
       )
       setInspections(response.data)
     } catch (error) {
@@ -42,11 +44,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
       const response = await axios.post(
         `${getApiUrl()}/api/inspections`,
         data,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
-          }
-        }
+        { headers: authHeaders() }
       )
       setInspections([response.data, ...inspections])
       setActiveTab('list')
@@ -62,16 +60,13 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
       const response = await axios.put(
         `${getApiUrl()}/api/inspections/${id}`,
         data,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
-          }
-        }
+        { headers: authHeaders() }
       )
       setInspections(
         inspections.map(insp => insp.id === id ? response.data : insp)
       )
       setEditingId(null)
+      setActiveTab('list')
       alert('点検を更新しました')
     } catch (error) {
       console.error('Failed to update inspection:', error)
@@ -85,11 +80,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
     try {
       await axios.delete(
         `${getApiUrl()}/api/inspections/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
-          }
-        }
+        { headers: authHeaders() }
       )
       setInspections(inspections.filter(insp => insp.id !== id))
       alert('削除しました')
@@ -97,6 +88,14 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
       console.error('Failed to delete inspection:', error)
       alert('削除に失敗しました')
     }
+  }
+
+  const handleViewInspection = (id) => {
+    setViewingId(id)
+  }
+
+  const handleBackFromDetail = () => {
+    setViewingId(null)
   }
 
   const editingInspection = editingId ? inspections.find(i => i.id === editingId) : null
@@ -138,6 +137,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
               onClick={() => {
                 setActiveTab('list')
                 setEditingId(null)
+                setViewingId(null)
               }}
               className={`py-4 px-2 font-medium text-sm border-b-2 transition ${
                 activeTab === 'list'
@@ -151,6 +151,7 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
               onClick={() => {
                 setActiveTab('form')
                 setEditingId(null)
+                setViewingId(null)
               }}
               className={`py-4 px-2 font-medium text-sm border-b-2 transition ${
                 activeTab === 'form'
@@ -175,15 +176,23 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
       {/* コンテンツ */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'list' ? (
-          <InspectionList
-            inspections={inspections}
-            isLoading={isLoading}
-            onEdit={(id) => {
-              setEditingId(id)
-              setActiveTab('form')
-            }}
-            onDelete={handleDeleteInspection}
-          />
+          viewingId ? (
+            <InspectionDetail
+              inspectionId={viewingId}
+              onBack={handleBackFromDetail}
+            />
+          ) : (
+            <InspectionList
+              inspections={inspections}
+              isLoading={isLoading}
+              onView={handleViewInspection}
+              onEdit={(id) => {
+                setEditingId(id)
+                setActiveTab('form')
+              }}
+              onDelete={handleDeleteInspection}
+            />
+          )
         ) : (
           <InspectionForm
             inspection={editingInspection}

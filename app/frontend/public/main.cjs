@@ -20,7 +20,10 @@ function createWindow() {
     },
   })
 
-  const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV
+  // 開発モードは localhost:5173、本番モードは Vercel で判定
+  // app.asar 内で実行されていれば本番環境
+  const isProd = __dirname.includes('asar') || __dirname.includes('resources')
+  const isDev = !isProd
 
   if (isDev) {
     const devUrl = 'http://localhost:5173'
@@ -33,14 +36,12 @@ function createWindow() {
       }, 2000)
     })
   } else {
-    const cloudUrl = 'https://your-app.vercel.app'
-    const localPath = path.join(__dirname, '../dist/index.html')
+    // 本番環境：Vercel から読み込む
+    const prodUrl = 'https://safety-patrol-nine.vercel.app'
+    console.log(`📱 Loading from Vercel: ${prodUrl}`)
 
-    console.log(`📱 Loading from: ${cloudUrl}`)
-
-    mainWindow.loadURL(cloudUrl).catch((err) => {
-      console.error('❌ Failed to load cloud version, trying local...')
-      mainWindow.loadFile(localPath)
+    mainWindow.loadURL(prodUrl).catch((err) => {
+      console.error('❌ Failed to load Vercel:', err)
     })
   }
 
