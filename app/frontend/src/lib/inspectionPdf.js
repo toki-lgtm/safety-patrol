@@ -38,24 +38,25 @@ const toDataUrl = async (url) => {
   }
 }
 
-// 写真サムネイルのグリッド。報告書向けに小型・整列。columns/height で密度を調整。
+// 写真グリッド。columns で列数（密度）を調整。元写真の縦横比はそのまま維持する
+// （height:auto。固定枠に切り取らない）。読み込み完了は描画前にまとめて待つ。
 // caption を渡すと各写真に「caption+連番」のキャプションを付ける。
-const photoGrid = (urls, urlToData, { columns = 3, height = 120, caption = '' } = {}) => {
+const photoGrid = (urls, urlToData, { columns = 3, caption = '' } = {}) => {
   if (!urls || urls.length === 0) return ''
   const cellW = `calc(${(100 / columns).toFixed(4)}% - ${((columns - 1) * 8) / columns}px)`
   const cells = urls
     .map((u, i) => {
       const dataUrl = urlToData[u]
       const img = dataUrl
-        ? `<img src="${dataUrl}" style="width:100%;height:${height}px;object-fit:cover;display:block;" />`
-        : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:${height}px;color:#9ca3af;font-size:11px;">画像読込失敗</span>`
+        ? `<img src="${dataUrl}" style="width:100%;height:auto;display:block;" />`
+        : `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:90px;color:#9ca3af;font-size:11px;">画像読込失敗</div>`
       const cap = caption
         ? `<div style="font-size:9px;color:#6b7280;padding:2px 5px;background:#f9fafb;border-top:1px solid #e5e7eb;">${esc(caption)}${i + 1}</div>`
         : ''
-      return `<div style="width:${cellW};border:1px solid #d1d5db;border-radius:4px;overflow:hidden;background:#f3f4f6;box-sizing:border-box;">${img}${cap}</div>`
+      return `<div style="width:${cellW};border:1px solid #d1d5db;border-radius:4px;overflow:hidden;background:#f3f4f6;box-sizing:border-box;align-self:flex-start;">${img}${cap}</div>`
     })
     .join('')
-  return `<div style="display:flex;flex-wrap:wrap;gap:8px;">${cells}</div>`
+  return `<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;">${cells}</div>`
 }
 
 /**
@@ -152,7 +153,7 @@ export async function generateInspectionPdf(inspection, { projectMap = {}, staff
   const sitePhotoBlock = sitePhotos.length
     ? `<div class="pdf-block" style="padding-top:12px;">
          <div style="font-size:11px;color:#6b7280;margin-bottom:5px;">現場写真</div>
-         ${photoGrid(sitePhotos, urlToData, { columns: 3, height: 115 })}
+         ${photoGrid(sitePhotos, urlToData, { columns: 3 })}
        </div>`
     : ''
 
@@ -196,7 +197,7 @@ export async function generateInspectionPdf(inspection, { projectMap = {}, staff
           const photos = urls.length
             ? `<div style="margin-top:7px;">
                  <span style="color:#dc2626;font-size:10px;font-weight:700;">指摘写真（${urls.length}枚）</span>
-                 <div style="margin-top:3px;">${photoGrid(urls, urlToData, { columns: 2, height: 150, caption: '写真' })}</div>
+                 <div style="margin-top:3px;">${photoGrid(urls, urlToData, { columns: 2, caption: '写真' })}</div>
                </div>`
             : ''
           const due = item.due_date
@@ -240,6 +241,19 @@ export async function generateInspectionPdf(inspection, { projectMap = {}, staff
 
   try {
     const root = container.querySelector('#pdf-root')
+
+    // height:auto の画像を正しく測定するため、全画像の読み込み完了を待つ
+    const imgEls = [...root.querySelectorAll('img')]
+    await Promise.all(
+      imgEls.map((img) =>
+        img.complete && img.naturalHeight > 0
+          ? Promise.resolve()
+          : new Promise((resolve) => {
+              img.onload = resolve
+              img.onerror = resolve
+            })
+      )
+    )
 
     // 各ブロックの位置・高さ（CSS px, root先頭基準）を測定
     const rootRect = root.getBoundingClientRect()
