@@ -42,7 +42,7 @@
 python "D:\01.claude code\04.アプリ\01.安全パトロール\archiver\archive_inspections.py" --dry-run
 
 # 今すぐ実行
-schtasks /Run /TN "SafetyPatrol アーカイブ"
+schtasks /Run /TN "SafetyPatrol Archive"
 
 # 期間を一時変更して実行（例: 3ヶ月より古い）
 python "…\archive_inspections.py" --months 3

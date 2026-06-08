@@ -1,8 +1,10 @@
-# 安全パトロール アーカイバ セットアップ
-# - ProgramData フォルダ作成（キー/ログ置き場）
-# - 月次スケジュールタスク登録（毎月1日 19:00）
-# 実行: PowerShell で  .\setup_scheduled_task.ps1
-# ※ サービスロールキーの配置だけは手動（このスクリプトは鍵を持ちません）
+# Safety Patrol Archiver - setup
+# - Creates ProgramData folder (for service-role key and logs)
+# - Registers a monthly scheduled task (day 1, 19:00) via Register-ScheduledTask -Xml
+#   (XML avoids schtasks quoting issues with spaced paths)
+# Run in PowerShell:  .\setup_scheduled_task.ps1
+# NOTE: ASCII-only on purpose (PS 5.1 misreads UTF-8-no-BOM Japanese as Shift-JIS).
+# NOTE: This script does NOT contain the service-role key; place it manually (see README).
 
 $ErrorActionPreference = "Stop"
 
@@ -10,14 +12,14 @@ $KeyDir   = "C:\ProgramData\SafetyPatrolArchiver"
 $KeyFile  = Join-Path $KeyDir "service_role_key.txt"
 $LogDir   = Join-Path $KeyDir "logs"
 $Script   = Join-Path $PSScriptRoot "archive_inspections.py"
-$TaskName = "SafetyPatrol アーカイブ"
+$TaskName = "SafetyPatrol Archive"
 
-# 1) フォルダ作成
+# 1) Folders
 New-Item -ItemType Directory -Force -Path $KeyDir | Out-Null
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
-Write-Host "✅ フォルダ準備: $KeyDir"
+Write-Host "[OK] folder ready: $KeyDir"
 
-# 2) Python(pythonw) 実体を解決（Storeエイリアスではなく実体を優先）
+# 2) Resolve pythonw (prefer real exe, not Store alias)
 $pyCandidates = @(
   "$env:LOCALAPPDATA\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\pythonw3.13.exe",
   "$env:LOCALAPPDATA\Programs\Python\Python313\pythonw.exe"
@@ -27,26 +29,68 @@ if (-not $Pythonw) {
   $cmd = Get-Command pythonw.exe -ErrorAction SilentlyContinue
   if ($cmd) { $Pythonw = $cmd.Source }
 }
-if (-not $Pythonw) { throw "pythonw.exe が見つかりません。Python をインストールしてください。" }
-Write-Host "✅ Python: $Pythonw"
+if (-not $Pythonw) { throw "pythonw.exe not found. Please install Python." }
+Write-Host "[OK] python: $Pythonw"
 
-# 3) 月次タスク登録（毎月1日 19:00 / 現在ユーザー / 制限権限）
-$action  = "`"$Pythonw`" `"$Script`""
-schtasks /Create /TN "$TaskName" /TR "$action" /SC MONTHLY /D 1 /ST 19:00 /RL LIMITED /F | Out-Null
-Write-Host "✅ スケジュールタスク登録: 「$TaskName」 毎月1日 19:00"
+# 3) Build task XML (monthly, day 1, 19:00) and register
+$xmlEsc = { param($s) $s -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' }
+$cmdXml = & $xmlEsc $Pythonw
+$argXml = & $xmlEsc ("`"$Script`"")
 
-# 4) 鍵の確認
+$xml = @"
+<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>Safety Patrol: archive old inspection photos/PDFs to shared drive and delete from cloud.</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <CalendarTrigger>
+      <StartBoundary>2026-01-01T19:00:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByMonth>
+        <DaysOfMonth><Day>1</Day></DaysOfMonth>
+        <Months>
+          <January/><February/><March/><April/><May/><June/>
+          <July/><August/><September/><October/><November/><December/>
+        </Months>
+      </ScheduleByMonth>
+    </CalendarTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <ExecutionTimeLimit>PT2H</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>$cmdXml</Command>
+      <Arguments>$argXml</Arguments>
+    </Exec>
+  </Actions>
+</Task>
+"@
+
+Register-ScheduledTask -TaskName $TaskName -Xml $xml -Force | Out-Null
+Write-Host "[OK] scheduled task '$TaskName' registered (monthly, day 1, 19:00)"
+
+# 4) Key check
 if (Test-Path $KeyFile) {
-  Write-Host "✅ サービスロールキー検出済み: $KeyFile"
+  Write-Host "[OK] service-role key found: $KeyFile"
 } else {
   Write-Host ""
-  Write-Host "⚠️ 次の1ステップだけ手動で必要です（1回のみ）:" -ForegroundColor Yellow
-  Write-Host "   Supabase の service_role キーを次のファイルに保存してください:"
+  Write-Host "[ACTION NEEDED - one time] Save the Supabase service_role key to:" -ForegroundColor Yellow
   Write-Host "   $KeyFile"
-  Write-Host "   取得元: Supabase ダッシュボード → Project Settings → API → service_role"
-  Write-Host "   （Render の環境変数 SUPABASE_SERVICE_ROLE_KEY と同じ値）"
+  Write-Host "   From: Supabase dashboard -> Project Settings -> API -> service_role"
+  Write-Host "   (same value as Render env var SUPABASE_SERVICE_ROLE_KEY)"
 }
 
 Write-Host ""
-Write-Host "▶ 動作確認（削除しません）:  python `"$Script`" --dry-run"
-Write-Host "▶ 今すぐ手動実行        :  schtasks /Run /TN `"$TaskName`""
+Write-Host "Dry run (no delete):  python `"$Script`" --dry-run"
+Write-Host "Run now           :  schtasks /Run /TN `"$TaskName`""
