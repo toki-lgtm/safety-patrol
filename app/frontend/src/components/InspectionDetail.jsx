@@ -54,6 +54,17 @@ function InspectionDetail({ inspectionId, onBack }) {
     }
   }
 
+  // 後方互換: issue_image_urls がない場合は issue_image_url を配列に変換して返す
+  const getIssueImageUrls = (item) => {
+    if (Array.isArray(item.issue_image_urls) && item.issue_image_urls.length > 0) {
+      return item.issue_image_urls
+    }
+    if (item.issue_image_url) {
+      return [item.issue_image_url]
+    }
+    return []
+  }
+
   if (isLoading) {
     return (
       <div className="text-center py-12">
@@ -89,6 +100,7 @@ function InspectionDetail({ inspectionId, onBack }) {
   }, {})
 
   const issueCount = details.filter(d => d.result === '指摘あり').length
+  const sitePhotos = Array.isArray(inspection.site_photo_urls) ? inspection.site_photo_urls : []
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -148,18 +160,41 @@ function InspectionDetail({ inspectionId, onBack }) {
               </dd>
             </div>
           </dl>
+
+          {/* コメント */}
           {inspection.comments && (
             <div className="mt-4">
               <dt className="text-xs text-gray-500 mb-1">コメント</dt>
               <dd className="text-sm text-gray-800 bg-gray-50 rounded px-3 py-2">{inspection.comments}</dd>
             </div>
           )}
+
+          {/* 対象区分（選択カテゴリ） */}
           {Array.isArray(inspection.categories) && inspection.categories.length > 0 && (
             <div className="mt-4">
-              <dt className="text-xs text-gray-500 mb-1">指摘カテゴリ</dt>
+              <dt className="text-xs text-gray-500 mb-1">対象区分</dt>
               <dd className="flex flex-wrap gap-2 mt-1">
                 {inspection.categories.map(cat => (
-                  <span key={cat} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium">{cat}</span>
+                  <span key={cat} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">{cat}</span>
+                ))}
+              </dd>
+            </div>
+          )}
+
+          {/* 現場写真 */}
+          {sitePhotos.length > 0 && (
+            <div className="mt-4">
+              <dt className="text-xs text-gray-500 mb-2">現場写真</dt>
+              <dd className="flex flex-wrap gap-2">
+                {sitePhotos.map((url, idx) => (
+                  <img
+                    key={idx}
+                    src={url}
+                    alt={`現場写真 ${idx + 1}`}
+                    onClick={() => setEnlargedImage(url)}
+                    className="w-24 h-24 object-cover rounded border border-gray-300 cursor-pointer hover:opacity-90 transition"
+                    title="クリックで拡大"
+                  />
                 ))}
               </dd>
             </div>
@@ -179,6 +214,7 @@ function InspectionDetail({ inspectionId, onBack }) {
                   <div className="divide-y divide-gray-100">
                     {items.map(item => {
                       const isIssue = item.result === '指摘あり'
+                      const imageUrls = getIssueImageUrls(item)
                       return (
                         <div key={item.id} className={`p-4 ${isIssue ? 'bg-red-50' : ''}`}>
                           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -201,18 +237,28 @@ function InspectionDetail({ inspectionId, onBack }) {
                                   </p>
                                 </div>
                               )}
-                              {item.issue_image_url && (
+
+                              {/* 複数写真サムネイル */}
+                              {imageUrls.length > 0 && (
                                 <div>
-                                  <p className="text-xs font-medium text-red-600 mb-1">指摘写真</p>
-                                  <img
-                                    src={item.issue_image_url}
-                                    alt="指摘写真"
-                                    onClick={() => setEnlargedImage(item.issue_image_url)}
-                                    className="w-32 h-32 object-cover rounded border border-red-200 cursor-pointer hover:opacity-90 transition"
-                                    title="クリックで拡大"
-                                  />
+                                  <p className="text-xs font-medium text-red-600 mb-1">
+                                    指摘写真 ({imageUrls.length}枚)
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {imageUrls.map((url, idx) => (
+                                      <img
+                                        key={idx}
+                                        src={url}
+                                        alt={`指摘写真 ${idx + 1}`}
+                                        onClick={() => setEnlargedImage(url)}
+                                        className="w-24 h-24 object-cover rounded border border-red-200 cursor-pointer hover:opacity-90 transition"
+                                        title="クリックで拡大"
+                                      />
+                                    ))}
+                                  </div>
                                 </div>
                               )}
+
                               {item.due_date && (
                                 <div>
                                   <p className="text-xs font-medium text-red-600 mb-1">改善期限</p>
