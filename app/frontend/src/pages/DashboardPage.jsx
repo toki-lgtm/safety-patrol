@@ -3,6 +3,7 @@ import axios from 'axios'
 import InspectionForm from '../components/InspectionForm'
 import InspectionList from '../components/InspectionList'
 import InspectionDetail from '../components/InspectionDetail'
+import CorrectionList from '../components/CorrectionList'
 import { generateInspectionPdf } from '../lib/inspectionPdf'
 
 function DashboardPage({ user, onLogout, onOpenMasters }) {
@@ -294,6 +295,20 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
             >
               ➕ 新規点検
             </button>
+            <button
+              onClick={() => {
+                setActiveTab('corrections')
+                setEditingId(null)
+                setViewingId(null)
+              }}
+              className={`py-4 px-2 font-medium text-sm border-b-2 transition ${
+                activeTab === 'corrections'
+                  ? 'border-green-600 text-green-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🔧 是正対応
+            </button>
           </div>
           {onOpenMasters && isAdmin && (
             <button
@@ -308,7 +323,14 @@ function DashboardPage({ user, onLogout, onOpenMasters }) {
 
       {/* コンテンツ */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'list' ? (
+        {activeTab === 'corrections' ? (
+          <CorrectionList
+            projects={projects}
+            staff={staff}
+            isAdmin={isAdmin}
+            myStaffId={perms.staffId}
+          />
+        ) : activeTab === 'list' ? (
           viewingId ? (
             <InspectionDetail
               inspectionId={viewingId}

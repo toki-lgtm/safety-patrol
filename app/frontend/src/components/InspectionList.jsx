@@ -36,6 +36,25 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
     }
   }
 
+  // 是正サマリ（correction フィールド）を優先したステータス表示
+  const getCorrectionStatus = (insp) => {
+    const c = insp.correction
+    // correction フィールドがない場合は従来のステータスにフォールバック
+    if (!c) return null
+    const { issues, approved, submitted } = c
+    if (issues === 0) {
+      return { label: '指摘なし', className: 'bg-green-100 text-green-800' }
+    }
+    if (approved === issues) {
+      return { label: '🟢 是正完了', className: 'bg-green-100 text-green-800' }
+    }
+    if (submitted > 0) {
+      return { label: '🔵 承認待ち', className: 'bg-blue-100 text-blue-800' }
+    }
+    // pending か rejected が残る
+    return { label: '🟠 是正待ち', className: 'bg-orange-100 text-orange-800' }
+  }
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '-'
     try {
@@ -111,9 +130,21 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
                     )}
                   </td>
                   <td className="px-4 py-4 text-sm">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(inspection.status)}`}>
-                      {getStatusLabel(inspection.status)}
-                    </span>
+                    {(() => {
+                      const corrStatus = getCorrectionStatus(inspection)
+                      if (corrStatus) {
+                        return (
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${corrStatus.className}`}>
+                            {corrStatus.label}
+                          </span>
+                        )
+                      }
+                      return (
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(inspection.status)}`}>
+                          {getStatusLabel(inspection.status)}
+                        </span>
+                      )
+                    })()}
                   </td>
                   <td className="px-4 py-4 text-sm" onClick={e => e.stopPropagation()}>
                     <div className="flex flex-wrap gap-2">

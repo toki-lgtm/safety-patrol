@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
+import CorrectionPanel from './CorrectionPanel'
 
 // report_url が実ファイルパスを指していれば「保存済みPDFあり」とみなす
 const hasStoredPdf = (insp) => !!insp && typeof insp.report_url === 'string' && insp.report_url.startsWith('reports/')
@@ -53,25 +54,26 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
     }
   }
 
-  useEffect(() => {
+  const fetchDetail = useCallback(async () => {
     if (!inspectionId) return
-    const fetchDetail = async () => {
-      try {
-        setIsLoading(true)
-        const res = await axios.get(
-          `${getApiUrl()}/api/inspections/${inspectionId}`,
-          { headers: authHeaders() }
-        )
-        setInspection(res.data)
-      } catch (err) {
-        console.error('詳細取得失敗:', err)
-        setError('点検データの取得に失敗しました')
-      } finally {
-        setIsLoading(false)
-      }
+    try {
+      setIsLoading(true)
+      const res = await axios.get(
+        `${getApiUrl()}/api/inspections/${inspectionId}`,
+        { headers: authHeaders() }
+      )
+      setInspection(res.data)
+    } catch (err) {
+      console.error('詳細取得失敗:', err)
+      setError('点検データの取得に失敗しました')
+    } finally {
+      setIsLoading(false)
     }
-    fetchDetail()
   }, [inspectionId])
+
+  useEffect(() => {
+    fetchDetail()
+  }, [fetchDetail])
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -378,6 +380,29 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
                                   </p>
                                 </div>
                               )}
+
+                              {/* 是正対応パネル */}
+                              <CorrectionPanel
+                                detail={item}
+                                inspection={{
+                                  id: inspection.id,
+                                  inspector_id: inspection.inspector_id,
+                                  manager_id: inspection.manager_id,
+                                }}
+                                isAdmin={isAdmin}
+                                myStaffId={myStaffId}
+                                onUpdated={(updatedDetail) => {
+                                  setInspection(prev => {
+                                    if (!prev) return prev
+                                    return {
+                                      ...prev,
+                                      inspection_details: (prev.inspection_details || []).map(d =>
+                                        d.id === updatedDetail.id ? { ...d, ...updatedDetail } : d
+                                      )
+                                    }
+                                  })
+                                }}
+                              />
                             </div>
                           )}
                         </div>
