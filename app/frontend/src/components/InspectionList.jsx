@@ -1,7 +1,8 @@
+import { useState, useMemo } from 'react'
 import Badge from './ui/Badge'
 import Button from './ui/Button'
 import Card from './ui/Card'
-import { FileText, Mail, Pencil, Trash2, Eye, Archive } from 'lucide-react'
+import { FileText, Mail, Pencil, Trash2, Eye, Archive, Search, ArrowUpDown, X } from 'lucide-react'
 
 // report_url が実ファイルパスを指していれば「保存済みPDFあり」とみなす
 const hasStoredPdf = (insp) => typeof insp.report_url === 'string' && insp.report_url.startsWith('reports/')
@@ -63,6 +64,78 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
     }
   }
 
+  // ─── 検索・フィルター・ソート ───
+  const [search, setSearch] = useState('')
+  const [filterProject, setFilterProject] = useState('')
+  const [filterInspector, setFilterInspector] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [sortKey, setSortKey] = useState('date_desc')
+
+  // 表示用ステータスラベル（是正サマリ優先、なければ従来ステータス）
+  const getDisplayStatus = (insp) => {
+    const corr = getCorrectionStatus(insp)
+    return corr ? corr.label : getStatusLabel(insp.status)
+  }
+
+  // ドロップダウン候補（実データに存在する値のみ）
+  const projectOptions = useMemo(() => {
+    const ids = [...new Set(inspections.map(i => i.project_id).filter(Boolean))]
+    return ids.map(id => ({ id, name: projectMap[id] || id }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ja'))
+  }, [inspections, projects])
+
+  const inspectorOptions = useMemo(() => {
+    const ids = [...new Set(inspections.map(i => i.inspector_id).filter(Boolean))]
+    return ids.map(id => ({ id, name: staffMap[id] || id }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ja'))
+  }, [inspections, staff])
+
+  const statusOptions = useMemo(
+    () => [...new Set(inspections.map(getDisplayStatus))],
+    [inspections]
+  )
+
+  // フィルター適用 → ソート
+  const visibleInspections = useMemo(() => {
+    const kw = search.trim().toLowerCase()
+    const filtered = inspections.filter(insp => {
+      if (filterProject && insp.project_id !== filterProject) return false
+      if (filterInspector && insp.inspector_id !== filterInspector) return false
+      if (filterStatus && getDisplayStatus(insp) !== filterStatus) return false
+      if (kw) {
+        const hay = [
+          projectMap[insp.project_id] || insp.project_id || '',
+          staffMap[insp.inspector_id] || insp.inspector_id || '',
+          ...(Array.isArray(insp.categories) ? insp.categories : []),
+          insp.comments || ''
+        ].join(' ').toLowerCase()
+        if (!hay.includes(kw)) return false
+      }
+      return true
+    })
+    const byDate = (a, b) => new Date(a.inspection_date || 0) - new Date(b.inspection_date || 0)
+    const byProject = (a, b) =>
+      (projectMap[a.project_id] || a.project_id || '').localeCompare(projectMap[b.project_id] || b.project_id || '', 'ja')
+    return [...filtered].sort((a, b) => {
+      switch (sortKey) {
+        case 'date_asc': return byDate(a, b)
+        case 'project':  return byProject(a, b)
+        case 'status':   return getDisplayStatus(a).localeCompare(getDisplayStatus(b), 'ja')
+        case 'date_desc':
+        default:         return byDate(b, a)
+      }
+    })
+  }, [inspections, search, filterProject, filterInspector, filterStatus, sortKey, projects, staff])
+
+  const hasActiveFilter = !!(search.trim() || filterProject || filterInspector || filterStatus)
+  const clearFilters = () => {
+    setSearch('')
+    setFilterProject('')
+    setFilterInspector('')
+    setFilterStatus('')
+  }
+  const controlCls = 'px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-ink-700 bg-white dark:bg-ink-800 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-brand-400 focus:border-transparent min-h-[44px]'
+
   if (isLoading) {
     return (
       <div className="text-center py-16">
@@ -84,13 +157,81 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
 
   return (
     <div className="space-y-3">
-      <div className="text-sm text-slate-500 dark:text-slate-400 px-1">全 {inspections.length} 件</div>
+      {/* ─── 検索・フィルター・ソート バー ─── */}
+      <Card className="p-3 sm:p-4 space-y-2.5">
+        {/* 検索 + ソート */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="現場・検査員・カテゴリで検索"
+              className={`${controlCls} w-full pl-9`}
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <ArrowUpDown className="w-4 h-4 text-slate-400 shrink-0" />
+            <select value={sortKey} onChange={e => setSortKey(e.target.value)} className={`${controlCls} flex-1 sm:flex-none`}>
+              <option value="date_desc">日付（新しい順）</option>
+              <option value="date_asc">日付（古い順）</option>
+              <option value="project">現場名順</option>
+              <option value="status">ステータス順</option>
+            </select>
+          </div>
+        </div>
+        {/* フィルター */}
+        <div className="flex flex-wrap gap-2">
+          <select value={filterProject} onChange={e => setFilterProject(e.target.value)} className={controlCls}>
+            <option value="">すべての現場</option>
+            {projectOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </select>
+          <select value={filterInspector} onChange={e => setFilterInspector(e.target.value)} className={controlCls}>
+            <option value="">すべての検査員</option>
+            {inspectorOptions.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+          </select>
+          <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className={controlCls}>
+            <option value="">すべてのステータス</option>
+            {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          {hasActiveFilter && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1 px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-ink-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-ink-700 transition min-h-[44px]"
+            >
+              <X className="w-3.5 h-3.5" />クリア
+            </button>
+          )}
+        </div>
+      </Card>
 
+      <div className="text-sm text-slate-500 dark:text-slate-400 px-1">
+        {hasActiveFilter
+          ? <>表示 {visibleInspections.length} 件 <span className="text-slate-400 dark:text-slate-500">/ 全 {inspections.length} 件</span></>
+          : <>全 {inspections.length} 件</>}
+      </div>
+
+      {visibleInspections.length === 0 ? (
+        <Card className="p-12 text-center">
+          <div className="text-5xl mb-3">🔍</div>
+          <p className="text-slate-600 dark:text-slate-300 text-base font-medium">条件に一致する点検がありません</p>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="mt-3 text-brand-600 dark:text-brand-400 underline underline-offset-2 hover:text-brand-700 dark:hover:text-brand-300 text-sm"
+          >
+            フィルターをクリア
+          </button>
+        </Card>
+      ) : (
+      <>
       {/* モバイル: カードリスト / デスクトップ: テーブル */}
 
       {/* ---- カードリスト（モバイル優先、sm未満） ---- */}
       <div className="flex flex-col gap-3 sm:hidden">
-        {inspections.map((inspection) => {
+        {visibleInspections.map((inspection) => {
           const hasIssues = Array.isArray(inspection.categories) && inspection.categories.length > 0
           const corrStatus = getCorrectionStatus(inspection)
           const statusTone = corrStatus ? corrStatus.tone : getStatusTone(inspection.status)
@@ -197,7 +338,7 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-ink-700">
-            {inspections.map((inspection) => {
+            {visibleInspections.map((inspection) => {
               const hasIssues = Array.isArray(inspection.categories) && inspection.categories.length > 0
               const corrStatus = getCorrectionStatus(inspection)
               const statusTone = corrStatus ? corrStatus.tone : getStatusTone(inspection.status)
@@ -297,6 +438,8 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
           </tbody>
         </table>
       </div>
+      </>
+      )}
     </div>
   )
 }
