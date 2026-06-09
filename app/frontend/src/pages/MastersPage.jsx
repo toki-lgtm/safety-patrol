@@ -34,7 +34,8 @@ function MastersPage() {
         const res = await axios.get(`${API_URL}/api/masters/projects`, { headers: authHeaders() })
         setProjects(res.data)
       } else if (activeTab === 'staff') {
-        const res = await axios.get(`${API_URL}/api/masters/staff`, { headers: authHeaders() })
+        // 社員は「安全パトロール」権限を持つ人のみ表示（追加・削除はポータルの社員一覧で行う）
+        const res = await axios.get(`${API_URL}/api/masters/staff?app=safety-patrol`, { headers: authHeaders() })
         setStaff(res.data)
       } else if (activeTab === 'inspection-items') {
         const res = await axios.get(`${API_URL}/api/masters/inspection-items`, { headers: authHeaders() })
@@ -92,6 +93,21 @@ function MastersPage() {
   const handleCancel = () => {
     setEditingId(null)
     setFormData({})
+  }
+
+  // 社員のアプリ内権限（メンバー/管理者）を変更。社員自体の追加・削除はポータルの社員一覧で行う。
+  const handleStaffPermChange = async (id, level) => {
+    try {
+      await axios.put(
+        `${API_URL}/api/masters/staff/${id}/app-permission`,
+        { access_level: level },
+        { headers: authHeaders() }
+      )
+      setStaff((prev) => prev.map((s) => (s.id === id ? { ...s, app_access_level: level } : s)))
+    } catch (error) {
+      console.error('Permission change error:', error)
+      alert('権限の変更に失敗しました')
+    }
   }
 
   // 入力欄の共通クラス
@@ -233,94 +249,46 @@ function MastersPage() {
     </div>
   )
 
-  // スタッフマスター表示
+  // 社員ごとの権限トグル（メンバー / 管理者）
+  const PermToggle = ({ value, onChange }) => {
+    const opts = [
+      { v: 'member', label: 'メンバー' },
+      { v: 'admin', label: '管理者' },
+    ]
+    return (
+      <div className="inline-flex gap-1">
+        {opts.map((o) => (
+          <button
+            key={o.v}
+            onClick={() => value !== o.v && onChange(o.v)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              value === o.v
+                ? 'bg-brand-600 text-white'
+                : 'bg-slate-100 dark:bg-ink-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-ink-600'
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  // スタッフマスター表示（社員の追加・削除はポータルの社員一覧で行い、ここでは権限の変更のみ）
   const renderStaff = () => (
     <div className="space-y-4">
-      {editingId && (
-        <FormPanel>
-          <p className="text-sm font-semibold text-brand-700 dark:text-brand-300 mb-3">
-            {editingId === 'new' ? '新規スタッフを追加' : 'スタッフ情報を編集'}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>氏名</label>
-              <input
-                placeholder="中原 釈統"
-                value={formData.name || ''}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>メールアドレス</label>
-              <input
-                placeholder="tokimune@nakahara131.co.jp"
-                value={formData.email || ''}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className={inputClass}
-              />
-              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                ログイン中のGoogleアカウントと一致させると本人の点検が紐づきます
-              </p>
-            </div>
-            <div>
-              <label className={labelClass}>権限</label>
-              <select
-                value={formData.app_role || 'member'}
-                onChange={(e) => setFormData({ ...formData, app_role: e.target.value })}
-                className={inputClass}
-              >
-                <option value="member">メンバー（一覧閲覧・新規点検）</option>
-                <option value="admin">管理者（全機能）</option>
-              </select>
-            </div>
-            <div className="flex items-end pb-0.5">
-              <label className="flex items-center gap-3 cursor-pointer select-none min-h-[44px]">
-                <input
-                  type="checkbox"
-                  checked={!!formData.report_cc}
-                  onChange={(e) => setFormData({ ...formData, report_cc: e.target.checked })}
-                  className="w-5 h-5 rounded text-brand-600 border-slate-300 dark:border-ink-600 focus:ring-2 focus:ring-brand-500/20 bg-white dark:bg-ink-700 cursor-pointer"
-                />
-                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <Mail size={14} className="text-brand-500" />
-                  レポートメールのCCに追加
-                </span>
-              </label>
-            </div>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-ink-700/50 rounded-lg px-3 py-2">
-            ※ チェックすると、点検報告PDFのメール送信時にこの社員が常にCCに入ります（宛先は各現場の作業所長）。
-          </p>
-          <div className="flex gap-2 pt-1">
-            <Button variant="primary" size="md" onClick={handleSave}>
-              <Save size={15} />
-              保存
-            </Button>
-            <Button variant="ghost" size="md" onClick={handleCancel}>
-              <X size={15} />
-              キャンセル
-            </Button>
-          </div>
-        </FormPanel>
-      )}
-
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {staff.length} 件登録中
+      <div className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-ink-700/50 rounded-lg px-3 py-2.5">
+        <Users size={14} className="text-brand-500 mt-0.5 flex-shrink-0" />
+        <p>
+          「安全パトロール」の利用権限を持つ社員のみ表示しています。
+          社員の追加・削除や氏名・メールの編集は<span className="font-semibold">ポータルの「社員一覧」</span>で行ってください。
+          ここではアプリ内の権限（メンバー／管理者）の変更のみ可能です。
         </p>
-        <Button
-          variant="primary"
-          size="md"
-          onClick={() => {
-            setEditingId('new')
-            setFormData({})
-          }}
-        >
-          <Plus size={16} />
-          新規追加
-        </Button>
       </div>
+
+      <p className="text-sm text-slate-500 dark:text-slate-400">
+        {staff.length} 名
+      </p>
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
@@ -331,14 +299,13 @@ function MastersPage() {
                 <th className={thClass}>メールアドレス</th>
                 <th className={thClass}>権限</th>
                 <th className={thClass}>レポートCC</th>
-                <th className={thClass + ' text-right'}>操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-ink-700">
               {staff.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
-                    登録されているスタッフがありません
+                  <td colSpan={4} className="px-4 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
+                    安全パトロールの権限を持つ社員がいません（ポータルの社員一覧で権限を付与してください）
                   </td>
                 </tr>
               ) : (
@@ -349,11 +316,10 @@ function MastersPage() {
                     </td>
                     <td className={tdClass}>{s.email}</td>
                     <td className="px-4 py-3.5">
-                      {s.app_role === 'admin' ? (
-                        <Badge tone="info">管理者</Badge>
-                      ) : (
-                        <Badge tone="neutral">メンバー</Badge>
-                      )}
+                      <PermToggle
+                        value={s.app_access_level || 'member'}
+                        onChange={(level) => handleStaffPermChange(s.id, level)}
+                      />
                     </td>
                     <td className="px-4 py-3.5">
                       {s.report_cc ? (
@@ -364,12 +330,6 @@ function MastersPage() {
                       ) : (
                         <span className="text-slate-300 dark:text-slate-600 text-xs">—</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <ActionButtons
-                        onEdit={() => handleEdit(s)}
-                        onDelete={() => handleDelete(s.id)}
-                      />
                     </td>
                   </tr>
                 ))

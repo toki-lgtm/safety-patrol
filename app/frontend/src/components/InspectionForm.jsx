@@ -61,7 +61,8 @@ function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = nul
       try {
         setMasterLoading(true)
         const [staffRes, projectsRes, itemsRes, templatesRes] = await Promise.all([
-          axios.get(`${getApiUrl()}/api/masters/staff`, { headers: authHeaders() }),
+          // 検査員・作業所長の選択肢は「安全パトロール」権限を持つ社員のみに絞る
+          axios.get(`${getApiUrl()}/api/masters/staff?app=safety-patrol`, { headers: authHeaders() }),
           axios.get(`${getApiUrl()}/api/masters/projects`, { headers: authHeaders() }),
           axios.get(`${getApiUrl()}/api/masters/inspection-items`, { headers: authHeaders() }),
           // 過去の指摘内容テンプレート（取得失敗しても点検入力は続行できるよう握りつぶす）

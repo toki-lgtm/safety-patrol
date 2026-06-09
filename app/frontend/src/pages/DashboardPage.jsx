@@ -19,9 +19,10 @@ function DashboardPage({ user, onLogout, onBackToPortal, onOpenMasters }) {
   const [viewingId, setViewingId] = useState(null)
   const [pdfBusyId, setPdfBusyId] = useState(null)
   const [sendBusyId, setSendBusyId] = useState(null)
-  // 権限: role='admin'(全機能) / 'member'(閲覧・新規点検), staffId=本人のスタッフID
-  const [perms, setPerms] = useState({ role: 'member', staffId: null })
-  const isAdmin = perms.role === 'admin'
+  // 権限: spRole=安全パトロールのアプリ内ロール（admin: 全機能 / member: 閲覧・新規点検）,
+  //       role=ポータル全体のグローバルロール, staffId=本人のスタッフID
+  const [perms, setPerms] = useState({ role: 'member', spRole: 'member', staffId: null })
+  const isAdmin = perms.role === 'admin' || perms.spRole === 'admin'
   // 編集/PDF発行できるか（管理者は全件、メンバーは自分が検査官の案件のみ）
   const canEditInspection = (insp) => isAdmin || (!!perms.staffId && insp?.inspector_id === perms.staffId)
 
@@ -46,10 +47,10 @@ function DashboardPage({ user, onLogout, onBackToPortal, onOpenMasters }) {
   const fetchPermissions = async () => {
     try {
       const res = await axios.get(`${getApiUrl()}/api/my-permissions`, { headers: authHeaders() })
-      setPerms({ role: res.data.role, staffId: res.data.staff_id })
+      setPerms({ role: res.data.role, spRole: res.data.safety_patrol_role, staffId: res.data.staff_id })
     } catch (error) {
       console.error('権限取得に失敗:', error)
-      setPerms({ role: 'member', staffId: null }) // 取得失敗時は最小権限
+      setPerms({ role: 'member', spRole: 'member', staffId: null }) // 取得失敗時は最小権限
     }
   }
 
