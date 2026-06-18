@@ -8,6 +8,7 @@ import { generateInspectionPdf } from '../lib/inspectionPdf'
 import Button from '../components/ui/Button'
 import ThemeToggle from '../components/ui/ThemeToggle'
 import { ClipboardCheck, Plus, Wrench, Settings, LogOut, LayoutGrid } from 'lucide-react'
+import { getApiUrl, authHeaders } from '../lib/api'
 
 function DashboardPage({ user, onLogout, onBackToPortal, onOpenMasters }) {
   const [activeTab, setActiveTab] = useState('list')
@@ -28,15 +29,6 @@ function DashboardPage({ user, onLogout, onBackToPortal, onOpenMasters }) {
 
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
   const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
-
-  const getApiUrl = () => {
-    const isDev = process.env.NODE_ENV !== 'production'
-    return isDev ? 'http://localhost:3000' : 'https://portal-api-hhlx.onrender.com'
-  }
-
-  const authHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem('authToken')}`
-  })
 
   useEffect(() => {
     fetchInspections()

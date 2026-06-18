@@ -3,6 +3,7 @@ import Badge from './ui/Badge'
 import Button from './ui/Button'
 import Card from './ui/Card'
 import { FileText, Mail, Pencil, Trash2, Eye, Archive, Search, ArrowUpDown, X } from 'lucide-react'
+import { formatDate } from '../lib/dateUtils'
 
 // report_url が実ファイルパスを指していれば「保存済みPDFあり」とみなす
 const hasStoredPdf = (insp) => typeof insp.report_url === 'string' && insp.report_url.startsWith('reports/')
@@ -53,15 +54,6 @@ function InspectionList({ inspections, isLoading, onEdit, onDelete, onView, onGe
     }
     // pending か rejected が残る
     return { label: '是正待ち', tone: 'warning' }
-  }
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-'
-    try {
-      return new Date(dateStr).toLocaleDateString('ja-JP')
-    } catch {
-      return dateStr
-    }
   }
 
   // ─── 検索・フィルター・ソート ───

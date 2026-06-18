@@ -3,18 +3,11 @@ import axios from 'axios'
 import Button from './ui/Button'
 import Card from './ui/Card'
 import { Check, X, Camera, ChevronRight, ChevronLeft, Save, MapPin } from 'lucide-react'
+import { getApiUrl, authHeaders } from '../lib/api'
 
 function InspectionForm({ inspection, onSubmit, isAdmin = false, myStaffId = null }) {
   // メンバーは検査員を自分に固定（管理者は自由選択）
   const lockInspector = !isAdmin && !!myStaffId
-  const getApiUrl = () => {
-    const isDev = process.env.NODE_ENV !== 'production'
-    return isDev ? 'http://localhost:3000' : 'https://portal-api-hhlx.onrender.com'
-  }
-
-  const authHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem('authToken')}`
-  })
 
   const today = new Date().toISOString().split('T')[0]
   const plusDays = (base, n) => {

@@ -4,10 +4,13 @@ import CorrectionPanel from './CorrectionPanel'
 import Button from './ui/Button'
 import Card from './ui/Card'
 import Badge from './ui/Badge'
+import ImageLightbox from './ui/ImageLightbox'
 import {
   ArrowLeft, Pencil, Lock, FileText, Mail, Archive,
   AlertTriangle, CheckCircle, Clock, Camera, ChevronRight
 } from 'lucide-react'
+import { getApiUrl, authHeaders } from '../lib/api'
+import { getIssueImageUrls } from '../lib/inspectionUtils'
 
 // report_url が実ファイルパスを指していれば「保存済みPDFあり」とみなす
 const hasStoredPdf = (insp) => !!insp && typeof insp.report_url === 'string' && insp.report_url.startsWith('reports/')
@@ -17,14 +20,6 @@ const isArchived = (insp) => !!insp && typeof insp.report_url === 'string' && in
 function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewPdf, onSendReport, projects = [], staff = [], isAdmin = false, myStaffId = null }) {
   const projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]))
   const staffMap = Object.fromEntries(staff.map(s => [s.id, s.name]))
-  const getApiUrl = () => {
-    const isDev = process.env.NODE_ENV !== 'production'
-    return isDev ? 'http://localhost:3000' : 'https://portal-api-hhlx.onrender.com'
-  }
-
-  const authHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem('authToken')}`
-  })
 
   const [inspection, setInspection] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -82,15 +77,6 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
     fetchDetail()
   }, [fetchDetail])
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'approved': return 'bg-green-100 text-green-800'
-      case 'rejected': return 'bg-red-100 text-red-800'
-      case 'completed': return 'bg-blue-100 text-blue-800'
-      default: return 'bg-yellow-100 text-yellow-800'
-    }
-  }
-
   const getStatusLabel = (status) => {
     switch (status) {
       case 'approved': return '✓ 承認済み'
@@ -108,17 +94,6 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
       case 'completed': return 'info'
       default: return 'warning'
     }
-  }
-
-  // 後方互換: issue_image_urls がない場合は issue_image_url を配列に変換して返す
-  const getIssueImageUrls = (item) => {
-    if (Array.isArray(item.issue_image_urls) && item.issue_image_urls.length > 0) {
-      return item.issue_image_urls
-    }
-    if (item.issue_image_url) {
-      return [item.issue_image_url]
-    }
-    return []
   }
 
   if (isLoading) {
@@ -444,28 +419,7 @@ function InspectionDetail({ inspectionId, onBack, onEdit, onGeneratePdf, onViewP
         )}
       </Card>
 
-      {/* 画像拡大モーダル */}
-      {enlargedImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={() => setEnlargedImage(null)}
-        >
-          <div className="relative max-w-3xl w-full mx-4">
-            <button
-              onClick={() => setEnlargedImage(null)}
-              className="absolute -top-11 right-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 transition"
-            >
-              ✕
-            </button>
-            <img
-              src={enlargedImage}
-              alt="拡大写真"
-              className="w-full h-auto rounded-2xl shadow-2xl"
-              onClick={e => e.stopPropagation()}
-            />
-          </div>
-        </div>
-      )}
+      <ImageLightbox url={enlargedImage} onClose={() => setEnlargedImage(null)} />
     </div>
   )
 }

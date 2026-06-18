@@ -2,16 +2,9 @@ import { useState } from 'react'
 import axios from 'axios'
 import Button from './ui/Button'
 import Badge from './ui/Badge'
+import ImageLightbox from './ui/ImageLightbox'
 import { Camera, Check, X, Clock, Image } from 'lucide-react'
-
-// getApiUrl / authHeaders をインライン定義（DashboardPage / InspectionDetail と同一ロジック）
-const getApiUrl = () => {
-  const isDev = process.env.NODE_ENV !== 'production'
-  return isDev ? 'http://localhost:3000' : 'https://portal-api-hhlx.onrender.com'
-}
-const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem('authToken')}`
-})
+import { getApiUrl, authHeaders } from '../lib/api'
 
 // 是正ステータスに対応するバッジ
 function CorrectionStatusBadge({ status }) {
@@ -347,28 +340,7 @@ function CorrectionPanel({ detail, inspection, isAdmin, myStaffId, onUpdated }) 
         )}
       </div>
 
-      {/* 画像拡大モーダル */}
-      {enlargedImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={() => setEnlargedImage(null)}
-        >
-          <div className="relative max-w-3xl w-full mx-4">
-            <button
-              onClick={() => setEnlargedImage(null)}
-              className="absolute -top-11 right-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 transition"
-            >
-              ✕
-            </button>
-            <img
-              src={enlargedImage}
-              alt="拡大写真"
-              className="w-full h-auto rounded-2xl shadow-2xl"
-              onClick={e => e.stopPropagation()}
-            />
-          </div>
-        </div>
-      )}
+      <ImageLightbox url={enlargedImage} onClose={() => setEnlargedImage(null)} />
     </div>
   )
 }

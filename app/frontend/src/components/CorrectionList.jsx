@@ -3,24 +3,11 @@ import axios from 'axios'
 import CorrectionPanel from './CorrectionPanel'
 import Card from './ui/Card'
 import Badge from './ui/Badge'
+import ImageLightbox from './ui/ImageLightbox'
 import { Bell, FileText, Clock, Camera, AlertTriangle } from 'lucide-react'
-
-const getApiUrl = () => {
-  const isDev = process.env.NODE_ENV !== 'production'
-  return isDev ? 'http://localhost:3000' : 'https://portal-api-hhlx.onrender.com'
-}
-const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem('authToken')}`
-})
-
-function formatDate(dateStr) {
-  if (!dateStr) return '-'
-  try {
-    return new Date(dateStr).toLocaleDateString('ja-JP')
-  } catch {
-    return dateStr
-  }
-}
+import { getApiUrl, authHeaders } from '../lib/api'
+import { formatDate } from '../lib/dateUtils'
+import { getIssueImageUrls } from '../lib/inspectionUtils'
 
 /**
  * CorrectionList
@@ -77,15 +64,6 @@ function CorrectionList({ projects = [], staff = [], isAdmin = false, myStaffId 
     setItems(prev => prev.map(item =>
       item.id === updatedDetail.id ? { ...item, ...updatedDetail } : item
     ))
-  }
-
-  // 指摘写真（後方互換）
-  const getIssueImageUrls = (item) => {
-    if (Array.isArray(item.issue_image_urls) && item.issue_image_urls.length > 0) {
-      return item.issue_image_urls
-    }
-    if (item.issue_image_url) return [item.issue_image_url]
-    return []
   }
 
   // 是正ステータスのBadgeトーン
@@ -291,28 +269,7 @@ function CorrectionList({ projects = [], staff = [], isAdmin = false, myStaffId 
         )
       })}
 
-      {/* 画像拡大モーダル */}
-      {enlargedImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={() => setEnlargedImage(null)}
-        >
-          <div className="relative max-w-3xl w-full mx-4">
-            <button
-              onClick={() => setEnlargedImage(null)}
-              className="absolute -top-11 right-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10 text-white hover:bg-white/20 transition"
-            >
-              ✕
-            </button>
-            <img
-              src={enlargedImage}
-              alt="拡大写真"
-              className="w-full h-auto rounded-2xl shadow-2xl"
-              onClick={e => e.stopPropagation()}
-            />
-          </div>
-        </div>
-      )}
+      <ImageLightbox url={enlargedImage} onClose={() => setEnlargedImage(null)} />
     </div>
   )
 }

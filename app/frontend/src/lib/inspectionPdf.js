@@ -5,21 +5,14 @@
 //       画像は fetch → dataURL 化して canvas の CORS 汚染を回避する。
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { formatDate } from './dateUtils'
+import { getIssueImageUrls } from './inspectionUtils'
 
 const esc = (s) =>
   String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '-'
-  try {
-    return new Date(dateStr).toLocaleDateString('ja-JP')
-  } catch {
-    return dateStr
-  }
-}
 
 // 画像URLを dataURL に変換（失敗時は null）
 const toDataUrl = async (url) => {
@@ -68,13 +61,6 @@ const photoGrid = (urls, urlToData, { columns = 3, caption = '' } = {}) => {
 export async function generateInspectionPdf(inspection, { projectMap = {}, staffMap = {} } = {}) {
   const details = inspection.inspection_details || []
   const sitePhotos = Array.isArray(inspection.site_photo_urls) ? inspection.site_photo_urls : []
-
-  // 後方互換: issue_image_urls が無ければ issue_image_url を配列化
-  const getIssueImageUrls = (item) => {
-    if (Array.isArray(item.issue_image_urls) && item.issue_image_urls.length > 0) return item.issue_image_urls
-    if (item.issue_image_url) return [item.issue_image_url]
-    return []
-  }
 
   // すべての画像URLを収集して dataURL 化
   const allUrls = new Set()

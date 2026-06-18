@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, Building2, Users, ListChecks, Save, X, Mail } fro
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Badge from '../components/ui/Badge'
+import { API_URL, authHeaders } from '../lib/api'
 
 function MastersPage() {
   const [activeTab, setActiveTab] = useState('projects')
@@ -13,14 +14,6 @@ function MastersPage() {
   const [loading, setLoading] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({})
-
-  const API_URL = process.env.NODE_ENV !== 'production'
-    ? 'http://localhost:3000'
-    : 'https://portal-api-hhlx.onrender.com'
-
-  const authHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem('authToken')}`
-  })
 
   // データ取得
   useEffect(() => {
