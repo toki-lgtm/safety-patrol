@@ -2,8 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
-import ws from 'ws'
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'crypto'
 
 dotenv.config()
 
@@ -16,7 +15,7 @@ app.use(express.json())
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY,
-  { global: { headers: { 'x-client-info': 'safety-patrol-api' } }, realtime: { transport: ws } }
+  { global: { headers: { 'x-client-info': 'safety-patrol-api' } } }
 )
 
 app.get('/health', (req, res) => {
@@ -91,7 +90,7 @@ app.post('/api/inspections', async (req, res) => {
     const { data, error } = await supabase
       .from('inspections')
       .insert([{
-        id: uuidv4(),
+        id: randomUUID(),
         inspection_id,
         project_id,
         inspector_id,
